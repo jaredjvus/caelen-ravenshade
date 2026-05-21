@@ -1328,17 +1328,17 @@ const LEVEL_DATA = [
     }
   },
   // L9
-  { warlock: 4, sorcerer: 5, classGain: '3rd-level spells: Counterspell, Fireball, Hypnotic Pattern, Fly' },
+  { warlock: 4, sorcerer: 5, classGain: 'Sorcerous Restoration; 3rd-level spells: Counterspell, Fireball, Hypnotic Pattern, Fly' },
   // L10
   { warlock: 4, sorcerer: 6, classGain: 'Wild Magic: Bend Luck — spend 2 sorcery points to add or subtract a d4 from any roll within 30 ft' },
   // L11
-  { warlock: 4, sorcerer: 7, classGain: 'Eldritch Blast scales to 3 beams; 4th-level spells: Greater Invisibility, Polymorph' },
+  { warlock: 4, sorcerer: 7, classGain: 'Sorcery Incarnate; Eldritch Blast scales to 3 beams; 4th-level spells: Greater Invisibility, Polymorph' },
   // L12
   { warlock: 4, sorcerer: 8, classGain: 'ASI: CHA 20', asi: { cha: 2 } },
   // L13
   { warlock: 4, sorcerer: 9, classGain: '5th-level spells: Wall of Force, Synaptic Static' },
   // L14
-  { warlock: 4, sorcerer: 10, classGain: '4th Metamagic, final cantrip', subclassGain: 'Wild Magic: Controlled Chaos' },
+  { warlock: 4, sorcerer: 10, classGain: '+1 Metamagic option (3rd total); 6th cantrip (final)' },
   // L15
   { warlock: 4, sorcerer: 11, classGain: '6th-level spells: Disintegrate, Chain Lightning' },
   // L16
@@ -1357,7 +1357,7 @@ const LEVEL_DATA = [
   // L17
   { warlock: 4, sorcerer: 13, classGain: '7th-level spells; Eldritch Blast scales to 4 beams' },
   // L18
-  { warlock: 4, sorcerer: 14, classGain: '8th-level spells' },
+  { warlock: 4, sorcerer: 14, classGain: 'Wild Magic: Controlled Chaos' },
   // L19
   { warlock: 4, sorcerer: 15, classGain: 'Dead level — no new class or subclass feature. 8th-level spell slot unlocks; prepared spells count increases.' },
   // L20
@@ -1451,11 +1451,13 @@ const CLASS_FEATURES = [
   { id: 'pact-chain', name: 'Pact of the Chain', level: 3, source: 'Warlock', desc: 'Summon a familiar (Imp: Vex). 60-ft telepathy, invisibility, can deliver touch spells.' },
   // Sorcerer
   { id: 'innate-sorcery', name: 'Innate Sorcery', level: 5, source: 'Sorcerer', desc: 'Twice per day, bonus action: +1 spell save DC and advantage on spell attack rolls for 1 minute.' },
-  { id: 'wild-magic-table', name: 'Wild Magic Surge', level: 7, source: 'Sorcerer (Wild Magic)', desc: 'When you cast a Sorcerer spell of 1st level or higher, you may roll on the surge table. Tides of Chaos can force a surge.' },
   { id: 'font-of-magic', name: 'Font of Magic', level: 6, source: 'Sorcerer', desc: 'Sorcery points = Sorcerer level. Convert slots to points and back.' },
   { id: 'metamagic', name: 'Metamagic', level: 6, source: 'Sorcerer', desc: 'Quickened Spell (cast as bonus action) + Subtle Spell (no verbal/somatic).' },
+  { id: 'wild-magic-table', name: 'Wild Magic Surge', level: 7, source: 'Sorcerer (Wild Magic)', desc: 'When you cast a Sorcerer spell of 1st level or higher, you may roll on the surge table. Tides of Chaos can force a surge.' },
+  { id: 'sorcerous-restoration', name: 'Sorcerous Restoration', level: 9, source: 'Sorcerer', desc: 'At the end of a Short Rest, regain expended Sorcery Points up to Sorcerer level ÷ 2 (rounded down). Once per Long Rest. (Verify exact wording in 2024 PHB.)' },
   { id: 'bend-luck', name: 'Bend Luck', level: 10, source: 'Wild Magic', desc: 'Spend 2 sorcery points to add or subtract a d4 from a roll within 30 ft (reaction).' },
-  { id: 'controlled-chaos', name: 'Controlled Chaos', level: 14, source: 'Wild Magic', desc: 'When you roll on the Wild Magic table, roll twice and pick the result.' }
+  { id: 'sorcery-incarnate', name: 'Sorcery Incarnate', level: 11, source: 'Sorcerer', desc: 'Enhances Innate Sorcery: while active, you can apply Metamagic options to spells without the usual one-per-spell limit. (Verify exact wording in 2024 PHB.)' },
+  { id: 'controlled-chaos', name: 'Controlled Chaos', level: 18, source: 'Wild Magic', desc: 'When you roll on the Wild Magic table, roll twice and pick the result.' }
 ];
 
 // Combat loops by level
