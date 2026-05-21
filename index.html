@@ -885,17 +885,36 @@ body::before {
   font-family: 'Cinzel', serif;
   font-size: 0.65rem;
   letter-spacing: 0.2em;
-  color: var(--gold);
   text-transform: uppercase;
   background: rgba(10, 6, 8, 0.9);
   border: 1px solid var(--gold-tarnish);
   padding: 0.4rem 0.8rem;
-  opacity: 0;
-  transition: opacity 0.3s;
   pointer-events: none;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-end;
 }
-.save-indicator.show { opacity: 1; }
+.save-line {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.save-line.show { opacity: 1; }
+.save-line.local { color: var(--gold); }
+.save-line.cloud-synced { color: var(--gold); }
+.save-line.cloud-syncing { color: var(--parchment-dim); }
+.save-line.cloud-error { color: var(--blood-bright); }
+.save-line.cloud-loading { color: var(--parchment-dim); }
+.loaded-from {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--parchment-dim);
+  text-align: center;
+  margin-top: 0.4rem;
+  min-height: 1.1rem;
+}
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -936,6 +955,7 @@ body::before {
       <input type="file" id="import-file" accept="application/json,.json" style="display:none">
       <button class="reset-btn" id="reset-btn">Reset Sheet</button>
     </div>
+    <div class="loaded-from" id="loaded-from"></div>
   </div>
 
   <!-- ABILITY SCORES -->
@@ -1217,7 +1237,10 @@ body::before {
 
 </div>
 
-<div class="save-indicator" id="save-indicator">Saved</div>
+<div class="save-indicator">
+  <div class="save-line local" id="save-local">Saved locally</div>
+  <div class="save-line" id="save-cloud">Cloud</div>
+</div>
 
 <script>
 // ============================================================
@@ -1451,6 +1474,7 @@ const STORAGE_KEY = 'caelen-sheet-v1';
 
 const DEFAULT_STATE = {
   schemaVersion: 1,
+  updatedAt: null, // ISO string, set on every local save; used to compare with cloud
   level: 1,
   hpCurrent: null, // null = match max
   coin: '65 gp in mixed coin, including 50 gp from his last booking',
@@ -1475,22 +1499,100 @@ function loadState() {
   }
 }
 
+// ============================================================
+// CLOUD SYNC (Supabase REST)
+// ============================================================
+// Security model: writes are open via RLS; the row UUID below is the only
+// thing keeping random visitors out. Don't post it publicly.
+
+const SUPABASE_PROJECT = 'amnfbhhmwhsythzkvcra';
+const SUPABASE_KEY = 'sb_publishable_f4f6TevmVgjSLw07PuJLgQ_ED8xhitb';
+const ROW_ID = 'c9dbc72f-beed-4c2b-8d67-03dce25b0f7a';
+const SB_REST = `https://${SUPABASE_PROJECT}.supabase.co/rest/v1/character_sheets`;
+const SB_AUTH = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+
+async function fetchRemote() {
+  const r = await fetch(`${SB_REST}?id=eq.${ROW_ID}&select=data,schema_version,updated_at`, { headers: SB_AUTH });
+  if (!r.ok) throw new Error(`fetch ${r.status}`);
+  const rows = await r.json();
+  return rows[0] || null;
+}
+
+async function pushRemote(snapshot) {
+  const r = await fetch(`${SB_REST}?id=eq.${ROW_ID}`, {
+    method: 'PATCH',
+    headers: { ...SB_AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({ data: snapshot, schema_version: snapshot.schemaVersion || 1 })
+  });
+  if (!r.ok) throw new Error(`patch ${r.status}: ${await r.text()}`);
+  const rows = await r.json();
+  return rows[0];
+}
+
+let cloudTimer = null;
+function syncToCloud() {
+  if (cloudTimer) clearTimeout(cloudTimer);
+  setCloudStatus('syncing', 'Cloud: saving…');
+  cloudTimer = setTimeout(async () => {
+    try {
+      const row = await pushRemote(state);
+      if (row && row.updated_at) {
+        // Adopt the server's timestamp as our local truth so next load
+        // doesn't see a phantom "cloud is newer" from clock skew.
+        state.updatedAt = row.updated_at;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+      }
+      setCloudStatus('synced', 'Cloud: synced');
+    } catch (e) {
+      console.error('cloud sync failed', e);
+      setCloudStatus('error', 'Cloud: offline');
+    }
+  }, 800);
+}
+
+function setCloudStatus(kind, text) {
+  const el = document.getElementById('save-cloud');
+  el.textContent = text;
+  el.classList.remove('cloud-synced', 'cloud-syncing', 'cloud-error', 'cloud-loading');
+  if (kind === 'synced')  el.classList.add('cloud-synced');
+  if (kind === 'syncing') el.classList.add('cloud-syncing');
+  if (kind === 'error')   el.classList.add('cloud-error');
+  if (kind === 'loading') el.classList.add('cloud-loading');
+  el.classList.add('show');
+}
+
+function setLoadedFrom(source) {
+  const labels = {
+    cloud:         '· loaded from cloud ·',
+    'local-newer': '· loaded from device (newer than cloud) ·',
+    local:         '· loaded from device (cloud unreachable) ·',
+    defaults:      '· loaded from defaults ·'
+  };
+  document.getElementById('loaded-from').textContent = labels[source] || '';
+}
+
+// ============================================================
+// LOCAL SAVE
+// ============================================================
+
 let saveTimer = null;
 function saveState() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
+      state.updatedAt = new Date().toISOString();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       showSaveIndicator();
+      syncToCloud();
     } catch (e) { console.error('Save failed', e); }
   }, 400);
 }
 
 function showSaveIndicator() {
-  const ind = document.getElementById('save-indicator');
-  ind.classList.add('show');
+  const el = document.getElementById('save-local');
+  el.classList.add('show');
   clearTimeout(showSaveIndicator._t);
-  showSaveIndicator._t = setTimeout(() => ind.classList.remove('show'), 1200);
+  showSaveIndicator._t = setTimeout(() => el.classList.remove('show'), 1500);
 }
 
 // ============================================================
@@ -2034,10 +2136,12 @@ document.getElementById('import-file').addEventListener('change', (e) => {
     // Strip export-only metadata, then merge over defaults for forward compat.
     const { _exportedAt, _app, ...incoming } = parsed;
     state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...incoming };
+    state.updatedAt = new Date().toISOString();
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (err) { console.error('Save failed', err); }
     document.getElementById('level-slider').value = state.level;
     render();
     showSaveIndicator();
+    syncToCloud();
   };
   reader.onerror = () => alert('Could not read that file.');
   reader.readAsText(file);
@@ -2046,9 +2150,11 @@ document.getElementById('import-file').addEventListener('change', (e) => {
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (confirm('Reset the entire sheet to defaults? All your edits, level, inventory, and notes will be lost.')) {
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-    localStorage.removeItem(STORAGE_KEY);
+    state.updatedAt = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     document.getElementById('level-slider').value = state.level;
     render();
+    syncToCloud(); // propagate reset to cloud, otherwise next page load would re-pull the old cloud state
   }
 });
 
@@ -2057,6 +2163,44 @@ document.getElementById('level-slider').value = state.level;
 
 // Initial render
 render();
+
+// ============================================================
+// INITIAL CLOUD LOAD
+// ============================================================
+// localStorage is the fast cache. After the initial render from local,
+// reach out for remote state; if it's newer, replace and re-render.
+(async function initCloudSync() {
+  const hasLocal = !!localStorage.getItem(STORAGE_KEY);
+  setCloudStatus('loading', 'Cloud: loading…');
+  try {
+    const remote = await fetchRemote();
+    const hasRemoteData = remote && remote.data && Object.keys(remote.data).length > 0;
+    if (hasRemoteData) {
+      const remoteTime = new Date(remote.updated_at).getTime();
+      const localTime = state.updatedAt ? new Date(state.updatedAt).getTime() : 0;
+      if (remoteTime > localTime) {
+        state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...remote.data };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+        document.getElementById('level-slider').value = state.level;
+        render();
+        setLoadedFrom('cloud');
+      } else {
+        setLoadedFrom('local-newer');
+        // Local is ahead of cloud — push so they reconverge.
+        syncToCloud();
+      }
+    } else {
+      setLoadedFrom(hasLocal ? 'local' : 'defaults');
+      // Cloud row is empty; if we have local state, seed the cloud.
+      if (hasLocal) syncToCloud();
+    }
+    setCloudStatus('synced', 'Cloud: synced');
+  } catch (e) {
+    console.error('cloud load failed', e);
+    setLoadedFrom(hasLocal ? 'local' : 'defaults');
+    setCloudStatus('error', 'Cloud: offline');
+  }
+})();
 
 </script>
 
