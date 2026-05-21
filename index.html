@@ -950,6 +950,77 @@ body.dm-mode input:not([type=file]):focus,
 body.dm-mode textarea:focus { outline: none; }
 body.dm-mode .dm-hide { display: none; }
 
+/* BACKSTORY */
+.backstory-details {
+  margin-top: 1rem;
+}
+.backstory-details summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 0.7rem 1.2rem;
+  border: 1px solid var(--gold-tarnish);
+  background: rgba(10, 6, 8, 0.6);
+  text-align: center;
+  font-size: 0.78rem;
+  transition: background 0.3s, border-color 0.3s;
+  user-select: none;
+}
+.backstory-details summary:hover {
+  background: rgba(184, 137, 58, 0.1);
+  border-color: var(--gold);
+}
+.backstory-details summary::-webkit-details-marker { display: none; }
+.backstory-details summary::before {
+  content: '+';
+  display: inline-block;
+  margin-right: 0.7rem;
+  width: 0.8em;
+  text-align: center;
+  font-weight: 700;
+}
+.backstory-details[open] summary::before { content: '−'; }
+.backstory-content {
+  font-family: 'EB Garamond', serif;
+  font-size: 1.08rem;
+  line-height: 1.75;
+  color: var(--parchment);
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 1rem;
+}
+.backstory-content h3 {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+  font-size: 1.05rem;
+  margin: 0;
+}
+.backstory-subtitle {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  text-align: center;
+  color: var(--parchment-aged);
+  margin: 0.4rem 0 2.5rem;
+  font-size: 1rem;
+}
+.backstory-content p {
+  margin: 0 0 1.3rem;
+}
+.backstory-content p:last-of-type { margin-bottom: 0; }
+.backstory-content .scene-break {
+  text-align: center;
+  color: var(--gold-tarnish);
+  letter-spacing: 0.8em;
+  margin: 2rem 0;
+  font-size: 1.2rem;
+}
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -1265,6 +1336,48 @@ body.dm-mode .dm-hide { display: none; }
         </tbody>
       </table>
     </div>
+  </section>
+
+  <!-- BACKSTORY -->
+  <section class="section">
+    <h2 class="section-title">The Story</h2>
+    <details class="backstory-details">
+      <summary>Show / Hide Backstory</summary>
+      <div class="backstory-content">
+        <h3>Caelen Ravenshade</h3>
+        <p class="backstory-subtitle">Heir to the Pendant, Vessel of the Hollow Choir</p>
+
+        <p>Caelen Ravenshade was born in Luskan to a half-elven hedge mage named Sarielle and to a celestial who stayed for one summer and then walked back into a column of dawn light and left her. She raised him alone in a stone house above the docks. She taught him cantrips when he was four and the lute when he was six. She made him promise on his seventh birthday that he would never take off the silver pendant she put around his neck.</p>
+
+        <p>The pendant was not a keepsake. Eight hundred years ago an ancestor of his, a witch named Maerithel, bound a sentient cursed thing into the silver to stop it from devouring a village in the High Forest. The thing called itself the Hollow Choir. It slept as long as a living descendant of Maerithel's blood wore the pendant against their skin. Each generation passed it on. Each generation slept lightly.</p>
+
+        <p>On Caelen's sixteenth birthday a thug in the Luskan market shoved him into a stone pillar. The silver cracked. His mother saw the fracture three days later and her face went the color of bone meal. She did not sleep for two nights. On the third night she came into his room with a knife and a face full of love and she tried to end the bloodline before the Choir could finish waking.</p>
+
+        <p>Caelen screamed. The pendant sang back. What came out of him was three things at once — the celestial fire that had been sleeping in his blood since the day he was born, a wild aberrant something his mother had never told him about, and the Choir itself, finally and completely free. The three forces met in his ribs and tore each other apart and remade him in the only shape they could agree on, which was the shape of a boy with shadows where his wings should be.</p>
+
+        <p>He rose out of the ruined bed and the air around him was full of small black things that were not flies and were not feathers and were not really there at all. His mother was crumpled against the wall sobbing his name. The Choir, finally free and now finally trapped in something better than silver, coiled around his ribs and whispered, in a voice that was kind in a way nothing kind should ever sound, <em>thank you, child. We have so much to do.</em></p>
+
+        <p>He took the cracked pendant and the few coins in her purse and he ran. He has not seen her since. He has sent her seven letters from seven different towns. He has not sent any of them. He keeps them folded in the bottom of his pack.</p>
+
+        <div class="scene-break">· · ·</div>
+
+        <p>The Choir is still inside him. He has counted at least three voices. One sounds like a woman who has been old for a very long time. One sounds like a boy of about nine who is trying very hard not to seem afraid. One sounds like a man whose patience is the patience of a thing that has already decided what is going to happen.</p>
+
+        <p>They feed him power. The Hexblade's Curse is their work. So are the shadows that lean very slightly toward him in any room he stands in. So is the small black mist that sometimes drifts up off his skin when he is upset and that he has to brush away the way other people brush away cobwebs.</p>
+
+        <p>When he calls his wings they come out of his shoulder blades in long curling tendrils of something that is almost smoke and almost feathers and almost fingers. They cast no shadow because they are already shadow. When he beats them the air around him goes cold and the candles in the room go out. But the damage rider comes out of him as a pale gold light, and this is his father's heritage, and it is the only thing in his arsenal that does not come from the Choir. The Choir lets him use the wings because the celestial light hurts them both, him and it, and they are the closest thing he has to a weapon against the thing inside him. The price of using it is that he has to wear the Choir's shape to wield his father's light.</p>
+
+        <div class="scene-break">· · ·</div>
+
+        <p>Caelen came to Neverwinter eighteen months ago, after almost two years of moving south down the Sword Coast in a slow, panicked drift. He plays lute five nights a week at a tavern on the Protector's Enclave called the Driftwood Tankard. The owner pays him in copper and meals and lets him sleep in the storeroom on cold nights. He is nineteen years old. He wears gloves most of the time because his fingertips have started to darken at the nails. He sleeps in pieces and never the full dark deep sleep his body wants.</p>
+
+        <p>A scholar named Sister Garaele has been teaching him for fourteen months to bend his magic into something that does not eat him alive. She does not know about the Choir. She suspects he is hiding something large. He has not told her. He cannot tell her. The Choir has made very clear what it will do if he tries.</p>
+
+        <p>He is in Neverwinter for three reasons, and he tells himself one at a time so he does not have to look at all three at once. There is a rumor from the Mintarn trade caravans of a silver-haired half-elven woman asking questions about an entity called the Hollow Choir, and he does not know if it is his mother or a trap. The Many-Starred Cloak's archives are said to hold the original binding ritual Maerithel used, and if he finds it he can redo it, though he understands what redoing it would cost. And there are places in this city where the voices in his head go suddenly silent — the ruins under the Cloak Tower, the wells of Blacklake, the old graveyard beyond the Neverdeath gate — and he does not know what the Choir is looking for, only that it is looking.</p>
+
+        <p>He is, despite everything, hopeful. He has not stopped hoping. He thinks if he can find the ritual and if his mother is alive and if he can convince her, just for the few minutes it would take, that he is still him under all of this, then he can give her back a son. He understands the odds. He has decided to hope anyway.</p>
+      </div>
+    </details>
   </section>
 
   <footer class="footer">
