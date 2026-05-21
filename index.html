@@ -1201,8 +1201,8 @@ body.dm-mode .dm-hide { display: none; }
             <p>Magic action. Touch a creature, roll <span id="healing-hands-dice">2</span>d4s, restore HP equal to the total. Once per long rest.</p>
           </div>
           <div class="feature-block" data-level="3">
-            <h4>Necrotic Shroud</h4>
-            <p>Bonus action, transform for 1 minute: eyes go dark, shadowy wings sprout. Once per turn, deal extra necrotic damage on a hit equal to proficiency bonus (<span id="necrotic-bonus">+2</span>). Creatures within 10 ft must make a CHA save (DC <span id="necrotic-dc">12</span>) or be Frightened until the end of your next turn. Once per long rest.</p>
+            <h4>Heavenly Wings <span style="font-weight:400;color:var(--gold-tarnish);font-size:0.85em;">· Celestial Revelation</span></h4>
+            <p>Bonus action, transform for 1 minute (or until you end it): two spectral wings sprout from your back, granting a Fly Speed equal to your Speed. Once per turn while transformed, deal extra radiant damage on one hit equal to proficiency bonus (<span id="revelation-bonus">+2</span>). Once per long rest.</p>
           </div>
         </div>
       </div>
@@ -1802,15 +1802,14 @@ function render() {
   document.getElementById('curse-bonus').textContent = pb;
   document.getElementById('curse-heal').textContent = w + chaMod;
 
-  // Healing Hands & Necrotic Shroud (use PB)
+  // Healing Hands (PB d4s) & Celestial Revelation damage rider (PB radiant for Heavenly Wings)
   document.getElementById('healing-hands-dice').textContent = pb;
-  document.getElementById('necrotic-bonus').textContent = '+' + pb;
-  document.getElementById('necrotic-dc').textContent = 8 + chaMod + pb;
-  // Necrotic Shroud locked under level 3
-  const necroticBlock = document.querySelector('[data-level="3"]');
-  if (necroticBlock) {
-    if (level < 3) necroticBlock.classList.add('locked');
-    else necroticBlock.classList.remove('locked');
+  document.getElementById('revelation-bonus').textContent = '+' + pb;
+  // Celestial Revelation locked under level 3
+  const revelationBlock = document.querySelector('[data-level="3"]');
+  if (revelationBlock) {
+    if (level < 3) revelationBlock.classList.add('locked');
+    else revelationBlock.classList.remove('locked');
   }
 
   // Saves
