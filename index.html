@@ -2098,12 +2098,20 @@ function renderSpells(level) {
 function renderClassFeatures(level) {
   const container = document.getElementById('class-features');
   container.innerHTML = '';
+  let hidden = 0;
   for (const f of CLASS_FEATURES) {
+    if (f.level > level) { hidden++; continue; }
     const block = document.createElement('div');
-    block.className = 'feature-block' + (f.level > level ? ' locked' : '');
+    block.className = 'feature-block';
     block.setAttribute('data-level', f.level);
     block.innerHTML = `<h4>${f.name}</h4><p><em>(${f.source})</em> ${f.desc}</p>`;
     container.appendChild(block);
+  }
+  if (hidden > 0) {
+    const note = document.createElement('p');
+    note.style.cssText = 'font-style:italic;color:var(--parchment-dim);font-size:0.85rem;margin-top:1rem;text-align:center;';
+    note.textContent = `+ ${hidden} more feature${hidden === 1 ? '' : 's'} at higher levels`;
+    container.appendChild(note);
   }
 }
 
