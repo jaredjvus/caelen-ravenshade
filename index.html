@@ -916,6 +916,39 @@ body::before {
   min-height: 1.1rem;
 }
 
+/* DM (read-only) view */
+.dm-banner {
+  display: none;
+  background: var(--blood);
+  color: var(--parchment);
+  text-align: center;
+  padding: 0.6rem 1rem;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  border-bottom: 1px solid var(--gold-tarnish);
+}
+body.dm-mode .dm-banner { display: block; }
+body.dm-mode .level-slider,
+body.dm-mode input:not([type=file]),
+body.dm-mode textarea,
+body.dm-mode .slot-pip,
+body.dm-mode .alt-options label,
+body.dm-mode .inv-remove {
+  pointer-events: none;
+}
+body.dm-mode .reset-btn,
+body.dm-mode .io-btn,
+body.dm-mode .header-action[data-add],
+body.dm-mode .inv-remove,
+body.dm-mode #save-local {
+  display: none !important;
+}
+body.dm-mode .level-slider { opacity: 0.5; }
+body.dm-mode input:not([type=file]):focus,
+body.dm-mode textarea:focus { outline: none; }
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -925,6 +958,8 @@ body::before {
 </style>
 </head>
 <body>
+
+<div class="dm-banner">DM View · Read-only · Updates every 5s</div>
 
 <div class="container">
 
@@ -1511,6 +1546,10 @@ const ROW_ID = 'c9dbc72f-beed-4c2b-8d67-03dce25b0f7a';
 const SB_REST = `https://${SUPABASE_PROJECT}.supabase.co/rest/v1/character_sheets`;
 const SB_AUTH = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
 
+// DM view: read-only, polls the cloud every 5s. Activated with ?view=dm.
+const IS_DM = new URLSearchParams(location.search).get('view') === 'dm';
+if (IS_DM) document.body.classList.add('dm-mode');
+
 async function fetchRemote() {
   const r = await fetch(`${SB_REST}?id=eq.${ROW_ID}&select=data,schema_version,updated_at`, { headers: SB_AUTH });
   if (!r.ok) throw new Error(`fetch ${r.status}`);
@@ -1577,6 +1616,7 @@ function setLoadedFrom(source) {
 
 let saveTimer = null;
 function saveState() {
+  if (IS_DM) return; // DM view is strictly read-only; never persist or sync
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
@@ -2201,6 +2241,32 @@ render();
     setCloudStatus('error', 'Cloud: offline');
   }
 })();
+
+// ============================================================
+// DM POLLING
+// ============================================================
+// In DM view, poll the cloud every 5s so HP and slot changes show up
+// during combat. Skipped when the tab is hidden to save bandwidth.
+if (IS_DM) {
+  setInterval(async () => {
+    if (document.visibilityState === 'hidden') return;
+    try {
+      const remote = await fetchRemote();
+      if (!remote || !remote.data || Object.keys(remote.data).length === 0) return;
+      const remoteTime = new Date(remote.updated_at).getTime();
+      const localTime = state.updatedAt ? new Date(state.updatedAt).getTime() : 0;
+      if (remoteTime > localTime) {
+        state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...remote.data };
+        document.getElementById('level-slider').value = state.level;
+        render();
+        setCloudStatus('synced', 'Cloud: live');
+      }
+    } catch (e) {
+      console.error('dm poll failed', e);
+      setCloudStatus('error', 'Cloud: offline');
+    }
+  }, 5000);
+}
 
 </script>
 
