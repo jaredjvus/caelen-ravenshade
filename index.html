@@ -933,8 +933,9 @@ body.dm-mode .dm-banner { display: block; }
 body.dm-mode .level-slider,
 body.dm-mode input:not([type=file]),
 body.dm-mode textarea,
-body.dm-mode .slot-pip,
-body.dm-mode .alt-options label,
+body.dm-mode .pip,
+body.dm-mode .alt-control label,
+body.dm-mode .alt-control input,
 body.dm-mode .inv-remove {
   pointer-events: none;
 }
@@ -1405,13 +1406,13 @@ const BG_BONUS = { cha: 2, con: 1 };
 const LEVEL_DATA = [
   null, // padding so index = level
   // L1
-  { warlock: 1, sorcerer: 0, classGain: 'Pact Magic, Hexblade\'s Curse, Hex Warrior, Eldritch Blast; Eldritch Invocations: Agonizing Blast + Repelling Blast; Musician (Entertainer Origin Feat)', subclass: 'Hexblade' },
+  { warlock: 1, sorcerer: 0, classGain: 'Pact Magic, Hexblade\'s Curse, Hex Warrior, Eldritch Blast; Eldritch Invocation: Agonizing Blast; Musician (Entertainer Origin Feat)', subclass: 'Hexblade' },
   // L2
-  { warlock: 2, sorcerer: 0, classGain: 'Magical Cunning; Eldritch Invocation: Devil\'s Sight' },
+  { warlock: 2, sorcerer: 0, classGain: 'Magical Cunning; +2 Eldritch Invocations: Repelling Blast, Devil\'s Sight' },
   // L3
   { warlock: 3, sorcerer: 0, classGain: 'Pact of the Chain (summon Vex, imp familiar)' },
   // L4
-  { warlock: 4, sorcerer: 0, classGain: 'Feat',
+  { warlock: 4, sorcerer: 0, classGain: 'Feat; +1 Warlock cantrip: Mind Sliver',
     feat: {
       id: 'lvl4-feat',
       label: 'Level 4 Feat',
@@ -1429,7 +1430,7 @@ const LEVEL_DATA = [
   // L7
   { warlock: 4, sorcerer: 3, classGain: 'Sorcerous Origin: Wild Magic — Wild Magic Surge + Tides of Chaos', subclass2: 'Wild Magic' },
   // L8
-  { warlock: 4, sorcerer: 4, classGain: 'Feat',
+  { warlock: 4, sorcerer: 4, classGain: 'Feat; +1 Sorcerer cantrip: Sorcerous Burst',
     feat: {
       id: 'lvl8-feat',
       label: 'Level 8 Feat',
@@ -1451,7 +1452,7 @@ const LEVEL_DATA = [
   // L13
   { warlock: 4, sorcerer: 9, classGain: '5th-level spells: Wall of Force, Synaptic Static' },
   // L14
-  { warlock: 4, sorcerer: 10, classGain: '+1 Metamagic option (3rd total); 6th cantrip (final)' },
+  { warlock: 4, sorcerer: 10, classGain: '+1 Metamagic option (3rd total); +1 Sorcerer cantrip: Message' },
   // L15
   { warlock: 4, sorcerer: 11, classGain: '6th-level spells: Disintegrate, Chain Lightning' },
   // L16
@@ -1483,10 +1484,13 @@ const SPELLS = [
   { name: 'Eldritch Blast', level: 'Cantrip', class: 'Warlock', gained: 1, notes: 'The Engine. Force damage, 120 ft, ranged spell attack.' },
   { name: 'Light', level: 'Cantrip', class: 'Aasimar', gained: 1, notes: 'Touch object, sheds bright light 20 ft.' },
   { name: 'Prestidigitation', level: 'Cantrip', class: 'Warlock', gained: 1, notes: 'Minor magical effects. Tuning strings, lighting candles.' },
+  { name: 'Mind Sliver', level: 'Cantrip', class: 'Warlock', gained: 4, notes: '1d6 psychic; target has −1d4 on its next save before end of your next turn.' },
   { name: 'Mage Hand', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Spectral floating hand. 30 ft range.' },
   { name: 'Minor Illusion', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Sound or image, 1 minute.' },
   { name: 'Mold Earth', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Excavate or shape stone/earth in a 5-ft cube.' },
   { name: 'Shape Water', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Manipulate up to 5 ft cube of water.' },
+  { name: 'Sorcerous Burst', level: 'Cantrip', class: 'Sorcerer', gained: 8, notes: '1d8 force; chains an additional d8 on each max roll.' },
+  { name: 'Message', level: 'Cantrip', class: 'Sorcerer', gained: 14, notes: 'Whispered telepathic message + reply, 120 ft.' },
   // 1st level
   { name: 'Hex', level: '1st', class: 'Warlock', gained: 1, notes: 'Bonus action. 1d6 necrotic on hits. Moves to new target when current drops.' },
   { name: 'Hideous Laughter', level: '1st', class: 'Warlock', gained: 1, notes: 'WIS save, target prone and incapacitated on fail.' },
@@ -1497,7 +1501,7 @@ const SPELLS = [
   { name: 'Absorb Elements', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Reaction: resistance to triggering element until next turn.' },
   // 2nd level
   { name: 'Mirror Image', level: '2nd', class: 'Warlock', gained: 5, notes: 'Three duplicates, attackers may hit a duplicate instead.' },
-  { name: 'Misty Step', level: '2nd', class: 'Sorcerer', gained: 5, notes: 'Bonus action teleport 30 ft.' },
+  { name: 'Misty Step', level: '2nd', class: 'Sorcerer', gained: 7, notes: 'Bonus action teleport 30 ft.' },
   { name: 'Suggestion', level: '2nd', class: 'Warlock', gained: 3, notes: 'WIS save, target follows reasonable command for up to 8 hours.' },
   // 3rd level
   { name: 'Counterspell', level: '3rd', class: 'Sorcerer', gained: 9, notes: 'Reaction: shut down enemy spell up to 3rd level automatically.' },
@@ -1519,7 +1523,7 @@ const SPELLS = [
   // 8th
   { name: 'Sunburst', level: '8th', class: 'Sorcerer', gained: 18, notes: '12d6 radiant in 60 ft radius, blinds on fail.' },
   // 9th
-  { name: 'Wish', level: '9th', class: 'Sorcerer', gained: 20, notes: 'The most powerful spell. Use carefully.' }
+  { name: 'Mind Blank', level: '8th', class: 'Sorcerer', gained: 20, notes: 'Target is immune to charm, fear, possession, divination, and psychic damage for 8 hours.' }
 ];
 
 // Sorcerer multiclass spell slot table — based on Sorcerer level only since Warlock uses Pact Magic separately
@@ -1559,8 +1563,9 @@ const CLASS_FEATURES = [
   { id: 'hex-warrior', name: 'Hex Warrior', level: 1, source: 'Warlock (Hexblade)', desc: 'Use CHA instead of STR/DEX for attack and damage with one bonded weapon (the sickle).' },
   { id: 'hexblades-curse', name: "Hexblade's Curse", level: 1, source: 'Warlock (Hexblade)', desc: 'See "The Engine" section above.' },
   { id: 'agonizing', name: 'Agonizing Blast', level: 1, source: 'Eldritch Invocation', desc: 'Add CHA mod to each beam of Eldritch Blast.' },
-  { id: 'repelling', name: 'Repelling Blast', level: 1, source: 'Eldritch Invocation', desc: 'Push targets 10 ft on Eldritch Blast hit.' },
+  { id: 'repelling', name: 'Repelling Blast', level: 2, source: 'Eldritch Invocation', desc: 'Push targets 10 ft on Eldritch Blast hit.' },
   { id: 'devils-sight', name: "Devil's Sight", level: 2, source: 'Eldritch Invocation', desc: 'See in normal and magical darkness up to 120 ft.' },
+  { id: 'magical-cunning', name: 'Magical Cunning', level: 2, source: 'Warlock', desc: 'Esoteric rite (1 minute) regains expended Pact Magic slots up to half your maximum (round up). Once per Long Rest.' },
   { id: 'pact-chain', name: 'Pact of the Chain', level: 3, source: 'Warlock', desc: 'Summon a familiar (Imp: Vex). 60-ft telepathy, invisibility, can deliver touch spells.' },
   // Sorcerer
   { id: 'innate-sorcery', name: 'Innate Sorcery', level: 5, source: 'Sorcerer', desc: 'Twice per day, bonus action: +1 spell save DC and advantage on spell attack rolls for 1 minute.' },
@@ -1901,7 +1906,7 @@ function render() {
   // EB
   const beams = ebBeams(level);
   const chaMod = mod(stats.cha);
-  const hasAgonizing = level >= 2;
+  const hasAgonizing = level >= 1;
   const ebDamage = hasAgonizing ? `1d10 + ${chaMod}` : '1d10';
   document.getElementById('eb-tohit').textContent = fmtMod(pb + chaMod);
   document.getElementById('eb-damage').textContent = ebDamage;
@@ -1911,7 +1916,7 @@ function render() {
   if (level >= 2) {
     invNote.innerHTML = `<em>Agonizing Blast: +${chaMod} per beam. Repelling Blast: push 10 ft on hit.</em>`;
   } else {
-    invNote.innerHTML = '<em>Agonizing Blast and Repelling Blast unlock at Warlock 2 (next level).</em>';
+    invNote.innerHTML = `<em>Agonizing Blast: +${chaMod} per beam. Repelling Blast unlocks at Warlock 2.</em>`;
   }
 
   // Curse
