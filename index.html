@@ -1292,9 +1292,9 @@ const BG_BONUS = { cha: 2, con: 1 };
 const LEVEL_DATA = [
   null, // padding so index = level
   // L1
-  { warlock: 1, sorcerer: 0, classGain: 'Pact Magic, Hexblade\'s Curse, Hex Warrior, Eldritch Blast', subclass: 'Hexblade' },
+  { warlock: 1, sorcerer: 0, classGain: 'Pact Magic, Hexblade\'s Curse, Hex Warrior, Eldritch Blast; Eldritch Invocations: Agonizing Blast + Repelling Blast; Musician (Entertainer Origin Feat)', subclass: 'Hexblade' },
   // L2
-  { warlock: 2, sorcerer: 0, classGain: 'Eldritch Invocations: Agonizing Blast, Repelling Blast' },
+  { warlock: 2, sorcerer: 0, classGain: 'Magical Cunning; +1 Eldritch Invocation (TBD)' },
   // L3
   { warlock: 3, sorcerer: 0, classGain: 'Pact of the Chain (summon Vex, imp familiar)' },
   // L4
@@ -1310,11 +1310,11 @@ const LEVEL_DATA = [
     }
   },
   // L5
-  { warlock: 4, sorcerer: 1, classGain: 'Innate Sorcery, Wild Magic Surge table, Sorcerer spellcasting' },
+  { warlock: 4, sorcerer: 1, classGain: 'Innate Sorcery, Sorcerer spellcasting' },
   // L6
-  { warlock: 4, sorcerer: 2, classGain: 'Font of Magic — sorcery points online' },
+  { warlock: 4, sorcerer: 2, classGain: 'Font of Magic (sorcery points), Metamagic: Quickened Spell + Subtle Spell' },
   // L7
-  { warlock: 4, sorcerer: 3, classGain: 'Metamagic: Quickened Spell + Subtle Spell', subclass2: 'Wild Magic' },
+  { warlock: 4, sorcerer: 3, classGain: 'Sorcerous Origin: Wild Magic — Wild Magic Surge + Tides of Chaos', subclass2: 'Wild Magic' },
   // L8
   { warlock: 4, sorcerer: 4, classGain: 'Feat',
     feat: {
@@ -1359,9 +1359,9 @@ const LEVEL_DATA = [
   // L18
   { warlock: 4, sorcerer: 14, classGain: '8th-level spells' },
   // L19
-  { warlock: 4, sorcerer: 15, classGain: 'ASI: CON 20', asi: { con: 2 } },
+  { warlock: 4, sorcerer: 15, classGain: '8th-level spell slot online' },
   // L20
-  { warlock: 4, sorcerer: 16, classGain: '9th-level spells; final character level' }
+  { warlock: 4, sorcerer: 16, classGain: 'ASI: CON 20 (final character level)', asi: { con: 2 } }
 ];
 
 // Spell scaling: when each spell is gained (charLevel)
@@ -1445,14 +1445,14 @@ const CLASS_FEATURES = [
   { id: 'pact-magic', name: 'Pact Magic', level: 1, source: 'Warlock', desc: 'Spell slots recover on a short or long rest. All pact slots are the same level.' },
   { id: 'hex-warrior', name: 'Hex Warrior', level: 1, source: 'Warlock (Hexblade)', desc: 'Use CHA instead of STR/DEX for attack and damage with one bonded weapon (the sickle).' },
   { id: 'hexblades-curse', name: "Hexblade's Curse", level: 1, source: 'Warlock (Hexblade)', desc: 'See "The Engine" section above.' },
-  { id: 'agonizing', name: 'Agonizing Blast', level: 2, source: 'Eldritch Invocation', desc: 'Add CHA mod to each beam of Eldritch Blast.' },
-  { id: 'repelling', name: 'Repelling Blast', level: 2, source: 'Eldritch Invocation', desc: 'Push targets 10 ft on Eldritch Blast hit.' },
+  { id: 'agonizing', name: 'Agonizing Blast', level: 1, source: 'Eldritch Invocation', desc: 'Add CHA mod to each beam of Eldritch Blast.' },
+  { id: 'repelling', name: 'Repelling Blast', level: 1, source: 'Eldritch Invocation', desc: 'Push targets 10 ft on Eldritch Blast hit.' },
   { id: 'pact-chain', name: 'Pact of the Chain', level: 3, source: 'Warlock', desc: 'Summon a familiar (Imp: Vex). 60-ft telepathy, invisibility, can deliver touch spells.' },
   // Sorcerer
   { id: 'innate-sorcery', name: 'Innate Sorcery', level: 5, source: 'Sorcerer', desc: 'Twice per day, bonus action: +1 spell save DC and advantage on spell attack rolls for 1 minute.' },
-  { id: 'wild-magic-table', name: 'Wild Magic Surge', level: 5, source: 'Sorcerer (Wild Magic)', desc: 'When you cast a Sorcerer spell of 1st level or higher, you may roll on the surge table.' },
+  { id: 'wild-magic-table', name: 'Wild Magic Surge', level: 7, source: 'Sorcerer (Wild Magic)', desc: 'When you cast a Sorcerer spell of 1st level or higher, you may roll on the surge table. Tides of Chaos can force a surge.' },
   { id: 'font-of-magic', name: 'Font of Magic', level: 6, source: 'Sorcerer', desc: 'Sorcery points = Sorcerer level. Convert slots to points and back.' },
-  { id: 'metamagic', name: 'Metamagic', level: 7, source: 'Sorcerer', desc: 'Quickened Spell (cast as bonus action) + Subtle Spell (no verbal/somatic).' },
+  { id: 'metamagic', name: 'Metamagic', level: 6, source: 'Sorcerer', desc: 'Quickened Spell (cast as bonus action) + Subtle Spell (no verbal/somatic).' },
   { id: 'bend-luck', name: 'Bend Luck', level: 10, source: 'Wild Magic', desc: 'Spend 2 sorcery points to add or subtract a d4 from a roll within 30 ft (reaction).' },
   { id: 'controlled-chaos', name: 'Controlled Chaos', level: 14, source: 'Wild Magic', desc: 'When you roll on the Wild Magic table, roll twice and pick the result.' }
 ];
