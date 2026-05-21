@@ -227,6 +227,23 @@ body::before {
   color: var(--parchment);
 }
 
+.io-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.io-btn:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+
 /* SECTION */
 .section {
   margin-bottom: 4rem;
@@ -914,6 +931,9 @@ body::before {
         <div class="level-display" id="level-display">1</div>
       </div>
       <span class="level-classes" id="level-classes-text">Hexblade Warlock 1</span>
+      <button class="io-btn" id="export-btn" title="Download a JSON backup of this sheet">Export</button>
+      <button class="io-btn" id="import-btn" title="Restore a sheet from a JSON backup">Import</button>
+      <input type="file" id="import-file" accept="application/json,.json" style="display:none">
       <button class="reset-btn" id="reset-btn">Reset Sheet</button>
     </div>
   </div>
@@ -1974,6 +1994,53 @@ document.querySelectorAll('[data-add]').forEach(btn => {
     const lastInput = ul.querySelector('li:last-child textarea');
     if (lastInput) lastInput.focus();
   });
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const payload = { ...state, _exportedAt: new Date().toISOString(), _app: STORAGE_KEY };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `caelen-ravenshade-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
+});
+
+document.getElementById('import-file').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ''; // allow re-selecting the same file later
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try { parsed = JSON.parse(reader.result); }
+    catch (err) { alert('Could not parse that file as JSON.'); return; }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      alert('That file does not look like a character sheet backup.');
+      return;
+    }
+    if (parsed.schemaVersion && parsed.schemaVersion > DEFAULT_STATE.schemaVersion) {
+      if (!confirm(`This backup is schema v${parsed.schemaVersion} but this sheet only knows v${DEFAULT_STATE.schemaVersion}. Import anyway?`)) return;
+    }
+    if (!confirm('Replace the current sheet with the imported data? Your current sheet will be overwritten.')) return;
+    // Strip export-only metadata, then merge over defaults for forward compat.
+    const { _exportedAt, _app, ...incoming } = parsed;
+    state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...incoming };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (err) { console.error('Save failed', err); }
+    document.getElementById('level-slider').value = state.level;
+    render();
+    showSaveIndicator();
+  };
+  reader.onerror = () => alert('Could not read that file.');
+  reader.readAsText(file);
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
