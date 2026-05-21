@@ -389,6 +389,54 @@ body::before {
 }
 .hp-current .sep { color: var(--gold-tarnish); }
 
+.temp-hp-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.95rem;
+  color: var(--gold);
+}
+.temp-hp-row input {
+  width: 38px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 0.95rem;
+  text-align: center;
+  outline: none;
+}
+.temp-hp-row input:focus { border-bottom-color: var(--gold); }
+.temp-hp-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-tarnish);
+}
+.inspiring-btn {
+  display: block;
+  margin: 0.4rem auto 0;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+}
+.inspiring-btn:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+.inspiring-btn[hidden] { display: none; }
+
 /* TWO-COL */
 .two-col {
   display: grid;
@@ -1116,6 +1164,10 @@ body.dm-mode .dm-hide { display: none; }
           <span id="hp-max">9</span>
         </div>
         <div class="sub" id="hp-formula">d8 + 3 (CON)</div>
+        <div class="temp-hp-row">
+          + <input type="number" id="temp-hp" value="0" min="0"> <span class="temp-hp-label">temp</span>
+        </div>
+        <button class="inspiring-btn" id="inspiring-btn" hidden title="Inspiring Leader: temp HP = character level + CHA mod (doesn't stack — only replaces if higher)">↻ Inspiring Leader</button>
       </div>
       <div class="defense-cell">
         <div class="label">Initiative</div>
@@ -1631,6 +1683,7 @@ const DEFAULT_STATE = {
   updatedAt: null, // ISO string, set on every local save; used to compare with cloud
   level: 1,
   hpCurrent: null, // null = match max
+  tempHp: 0,       // temporary HP, doesn't stack with itself (Inspiring Leader, etc.)
   coin: '65 gp in mixed coin, including 50 gp from his last booking',
   notes: '',
   inventory: JSON.parse(JSON.stringify(DEFAULT_INVENTORY)),
@@ -1899,6 +1952,11 @@ function render() {
   }
   document.getElementById('hp-formula').textContent =
     `${w > 0 ? `${w}d8` : ''}${w > 0 && s > 0 ? ' + ' : ''}${s > 0 ? `${s}d6` : ''} + ${mod(stats.con) * (w + s)} CON`;
+
+  // Temp HP + Inspiring Leader button (only visible once the feat is taken)
+  document.getElementById('temp-hp').value = state.tempHp || 0;
+  const inspiringTaken = level >= 4 && (state.alternates['lvl4-feat'] || 'inspiring') === 'inspiring';
+  document.getElementById('inspiring-btn').hidden = !inspiringTaken;
 
   // EB
   const beams = ebBeams(level);
@@ -2238,6 +2296,23 @@ document.getElementById('level-slider').addEventListener('input', (e) => {
 document.getElementById('hp-current').addEventListener('input', (e) => {
   const v = parseInt(e.target.value, 10);
   state.hpCurrent = isNaN(v) ? null : v;
+  saveState();
+});
+
+document.getElementById('temp-hp').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value, 10);
+  state.tempHp = isNaN(v) || v < 0 ? 0 : v;
+  saveState();
+});
+
+document.getElementById('inspiring-btn').addEventListener('click', () => {
+  // Inspiring Leader: temp HP = character level + CHA mod. Temp HP doesn't
+  // stack — taking the higher of current and incoming.
+  const stats = computeStats(state.level);
+  const incoming = state.level + mod(stats.cha);
+  const newTemp = Math.max(state.tempHp || 0, incoming);
+  state.tempHp = newTemp;
+  document.getElementById('temp-hp').value = newTemp;
   saveState();
 });
 
