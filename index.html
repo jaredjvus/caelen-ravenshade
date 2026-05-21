@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caelen Ravenshade — Character Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700;800&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0a0608;
+  --ink-deep: #050304;
+  --parchment: #e8dcc4;
+  --parchment-aged: #c9b994;
+  --parchment-dim: #8a7d62;
+  --blood: #6b1a1f;
+  --blood-bright: #962025;
+  --gold: #b8893a;
+  --gold-bright: #d4a253;
+  --gold-tarnish: #7a5a25;
+  --shadow: #1a1416;
+  --silver-crack: #9c8e72;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--ink);
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(107, 26, 31, 0.15), transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(184, 137, 58, 0.08), transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(20, 16, 18, 0.4), transparent 70%);
+  color: var(--parchment);
+  font-family: 'EB Garamond', 'Cormorant Garamond', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 2rem 1rem 4rem;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 2px, rgba(255,255,255,0.012) 3px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0px, transparent 1px, transparent 2px, rgba(0,0,0,0.02) 3px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* HEADER */
+.header {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+  border-bottom: 1px solid var(--gold-tarnish);
+  margin-bottom: 3rem;
+  position: relative;
+}
+.header::before {
+  content: '✦';
+  position: absolute;
+  bottom: -0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--gold);
+  background: var(--ink);
+  padding: 0 1rem;
+  font-size: 1rem;
+}
+
+.eyebrow {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.4em;
+  font-size: 0.7rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  opacity: 0.85;
+}
+
+.name {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  letter-spacing: 0.06em;
+  color: var(--parchment);
+  text-shadow: 0 0 30px rgba(184, 137, 58, 0.2);
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+
+.epithet {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1.4rem;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  margin-bottom: 2rem;
+}
+
+.titlebar {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--parchment-aged);
+}
+.titlebar span { padding: 0 0.5rem; }
+.titlebar span + span { border-left: 1px solid var(--gold-tarnish); padding-left: 2rem; }
+
+/* LEVEL CONTROL — sticky bar at top */
+.level-control {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(180deg, var(--ink) 0%, var(--ink) 80%, transparent 100%);
+  padding: 1rem 0 1.5rem;
+  margin: -2rem -1rem 2.5rem;
+  border-bottom: 1px solid var(--gold-tarnish);
+}
+
+.level-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.level-label {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.3em;
+  font-size: 0.75rem;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.level-slider-wrap {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.level-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: linear-gradient(90deg, var(--gold-tarnish), var(--gold));
+  outline: none;
+  border-radius: 2px;
+}
+.level-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--blood-bright);
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(150, 32, 37, 0.6);
+}
+.level-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--blood-bright);
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.level-display {
+  font-family: 'Cinzel', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--parchment);
+  min-width: 60px;
+  text-align: center;
+  padding: 0.2rem 0.8rem;
+  border: 1px solid var(--gold);
+  background: rgba(10, 6, 8, 0.6);
+}
+
+.level-classes {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--parchment-aged);
+}
+
+.reset-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--blood);
+  color: var(--blood-bright);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.reset-btn:hover {
+  background: var(--blood);
+  color: var(--parchment);
+}
+
+/* SECTION */
+.section {
+  margin-bottom: 4rem;
+}
+
+.section-title {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 2.5rem;
+  position: relative;
+  padding: 0 2rem;
+}
+
+.section-title::before, .section-title::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 25%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-tarnish), transparent);
+}
+.section-title::before { left: 0; }
+.section-title::after { right: 0; }
+
+/* STATS */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-block {
+  border: 1px solid var(--gold-tarnish);
+  background: linear-gradient(180deg, rgba(184, 137, 58, 0.05), rgba(10, 6, 8, 0.4));
+  padding: 1.2rem 0.5rem;
+  text-align: center;
+  position: relative;
+  transition: all 0.4s ease;
+}
+.stat-block.primary { border-color: var(--blood-bright); }
+.stat-block.primary::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px; right: -1px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--blood-bright), transparent);
+}
+
+.stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  margin-bottom: 0.4rem;
+}
+
+.stat-value {
+  font-family: 'Cinzel', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--parchment);
+  line-height: 1;
+  transition: color 0.4s, text-shadow 0.4s;
+}
+.stat-value.changed {
+  color: var(--gold-bright);
+  text-shadow: 0 0 12px rgba(212, 162, 83, 0.6);
+}
+
+.stat-mod {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--parchment-aged);
+  margin-top: 0.3rem;
+}
+
+/* DEFENSE ROW */
+.defense-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.defense-cell {
+  border: 1px solid var(--gold-tarnish);
+  padding: 1rem;
+  text-align: center;
+  background: rgba(10, 6, 8, 0.4);
+}
+
+.defense-cell .label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.defense-cell .value {
+  font-family: 'Cinzel', serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--parchment);
+}
+
+.defense-cell .sub {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--parchment-aged);
+  margin-top: 0.3rem;
+}
+
+.hp-current {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-family: 'Cinzel', serif;
+  font-size: 1.6rem;
+  color: var(--parchment);
+}
+
+.hp-current input {
+  width: 50px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gold-tarnish);
+  color: var(--parchment);
+  font-family: 'Cinzel', serif;
+  font-size: 1.6rem;
+  text-align: center;
+  outline: none;
+}
+.hp-current input:focus {
+  border-bottom-color: var(--gold);
+}
+.hp-current .sep { color: var(--gold-tarnish); }
+
+/* TWO-COL */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+}
+
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .defense-row { grid-template-columns: repeat(2, 1fr); }
+  .level-inner { flex-direction: column; align-items: stretch; }
+}
+
+/* CARD */
+.card {
+  border: 1px solid var(--gold-tarnish);
+  background: linear-gradient(180deg, rgba(20, 16, 18, 0.6), rgba(10, 6, 8, 0.8));
+  padding: 1.8rem;
+  position: relative;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 12px; height: 12px;
+  border-top: 1px solid var(--gold);
+  border-left: 1px solid var(--gold);
+}
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 12px; height: 12px;
+  border-bottom: 1px solid var(--gold);
+  border-right: 1px solid var(--gold);
+}
+
+.card h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--gold-tarnish);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card h3 .header-action {
+  font-family: 'EB Garamond', serif;
+  text-transform: none;
+  letter-spacing: 0.05em;
+  font-size: 0.8rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--parchment-aged);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--gold-tarnish);
+  transition: all 0.2s;
+}
+.card h3 .header-action:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+.card p { margin-bottom: 0.8rem; }
+.card p:last-child { margin-bottom: 0; }
+
+.card ul { list-style: none; padding: 0; }
+
+.card li {
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  position: relative;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.2);
+}
+.card li:last-child { border-bottom: none; }
+.card li::before {
+  content: '✦';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+  font-size: 0.7rem;
+  top: 0.7rem;
+}
+
+.card strong {
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: var(--parchment);
+  font-weight: 600;
+}
+
+/* SPELL TABLE */
+.spell-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-family: 'EB Garamond', serif;
+}
+
+.spell-table thead { border-bottom: 1px solid var(--gold); }
+
+.spell-table th {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.8rem 0.5rem;
+}
+
+.spell-table td {
+  padding: 0.7rem 0.5rem;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.2);
+  vertical-align: top;
+}
+
+.spell-table tr.preview {
+  opacity: 0.55;
+}
+.spell-table tr.preview td {
+  background: rgba(150, 32, 37, 0.04);
+}
+
+.spell-table .level-tag {
+  display: inline-block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.preview-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  padding: 0.15rem 0.5rem;
+  background: var(--blood);
+  color: var(--parchment);
+  text-transform: uppercase;
+  border-radius: 1px;
+}
+
+.spell-name { color: var(--parchment); font-weight: 500; }
+.spell-source { color: var(--parchment-aged); font-style: italic; font-size: 0.85rem; }
+
+/* SLOTS */
+.slot-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.2);
+  flex-wrap: wrap;
+}
+.slot-row:last-child { border-bottom: none; }
+
+.slot-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  min-width: 150px;
+  text-transform: uppercase;
+}
+
+.slot-pips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.pip {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--gold);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pip.filled {
+  background: var(--blood-bright);
+  border-color: var(--blood-bright);
+  box-shadow: 0 0 6px rgba(150, 32, 37, 0.5);
+}
+.pip:hover { transform: scale(1.15); }
+
+/* SKILLS */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.4rem 2rem;
+}
+@media (max-width: 600px) {
+  .skills-grid { grid-template-columns: 1fr; }
+}
+
+.skill-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.15);
+}
+
+.skill-row.proficient .skill-name { color: var(--parchment); }
+.skill-row.proficient .skill-name::before {
+  content: '◆';
+  color: var(--gold);
+  margin-right: 0.5rem;
+}
+
+.skill-name { font-family: 'EB Garamond', serif; color: var(--parchment-aged); }
+.skill-value { font-family: 'Cinzel', serif; color: var(--parchment); font-weight: 500; }
+
+/* FEATURE BLOCK */
+.feature-block {
+  border-left: 2px solid var(--blood);
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: opacity 0.4s;
+}
+.feature-block.locked {
+  opacity: 0.4;
+  filter: grayscale(0.6);
+}
+.feature-block.locked h4::after {
+  content: ' — gained at level ' attr(data-level);
+  color: var(--blood-bright);
+  font-style: italic;
+  font-size: 0.8rem;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.feature-block h4 {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.feature-block p { font-size: 0.95rem; line-height: 1.7; }
+
+/* COMBAT LOOPS */
+.loop {
+  background: rgba(107, 26, 31, 0.08);
+  border-left: 3px solid var(--blood-bright);
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.loop .loop-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.2em;
+  color: var(--blood-bright);
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+
+.loop p { font-size: 1rem; }
+.loop .arrow { color: var(--gold); padding: 0 0.4rem; }
+
+/* INVENTORY */
+.inventory-list {
+  list-style: none;
+  padding: 0;
+}
+
+.inv-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.2);
+  position: relative;
+}
+.inv-item::before { display: none !important; }
+.inv-item .inv-text {
+  flex: 1;
+  font-family: 'EB Garamond', serif;
+  color: var(--parchment);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  font-size: 1rem;
+  outline: none;
+  padding: 0.2rem 0;
+  resize: none;
+  min-height: 1.5rem;
+  line-height: 1.4;
+  width: 100%;
+}
+.inv-item .inv-text:focus {
+  border-bottom-color: var(--gold-tarnish);
+}
+.inv-item .inv-text::placeholder {
+  color: var(--parchment-dim);
+  font-style: italic;
+}
+
+.inv-remove {
+  background: transparent;
+  border: none;
+  color: var(--blood);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 0.4rem;
+  line-height: 1.4;
+  opacity: 0.6;
+  transition: opacity 0.2s, color 0.2s;
+}
+.inv-remove:hover { opacity: 1; color: var(--blood-bright); }
+
+.add-btn {
+  margin-top: 1rem;
+  background: transparent;
+  border: 1px dashed var(--gold-tarnish);
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  width: 100%;
+  transition: all 0.3s;
+}
+.add-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  background: rgba(184, 137, 58, 0.05);
+}
+
+/* NOTES */
+.notes-area {
+  width: 100%;
+  min-height: 120px;
+  background: rgba(10, 6, 8, 0.4);
+  border: 1px solid var(--gold-tarnish);
+  color: var(--parchment);
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  padding: 1rem;
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+}
+.notes-area:focus { border-color: var(--gold); }
+.notes-area::placeholder { color: var(--parchment-dim); font-style: italic; }
+
+/* ALTERNATES */
+.alt-control {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(184, 137, 58, 0.05);
+  border-left: 2px solid var(--gold);
+}
+
+.alt-control .alt-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+
+.alt-control label {
+  display: block;
+  padding: 0.4rem 0;
+  cursor: pointer;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.95rem;
+  color: var(--parchment-aged);
+  transition: color 0.2s;
+}
+.alt-control label:hover { color: var(--parchment); }
+.alt-control input[type="radio"] {
+  margin-right: 0.6rem;
+  accent-color: var(--blood-bright);
+}
+.alt-control input[type="radio"]:checked + span {
+  color: var(--parchment);
+  font-weight: 500;
+}
+
+/* QUOTE */
+.quote {
+  text-align: center;
+  margin: 4rem auto;
+  max-width: 600px;
+  padding: 2rem;
+  position: relative;
+}
+.quote::before, .quote::after {
+  content: '"';
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 6rem;
+  color: var(--gold-tarnish);
+  position: absolute;
+  line-height: 1;
+  opacity: 0.5;
+}
+.quote::before { top: 0; left: 0; }
+.quote::after { bottom: -2rem; right: 0; }
+.quote p {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1.5rem;
+  line-height: 1.5;
+  color: var(--parchment);
+}
+.quote cite {
+  display: block;
+  margin-top: 1rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+  text-transform: uppercase;
+  font-style: normal;
+}
+
+/* LEVEL TABLE */
+.level-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'EB Garamond', serif;
+}
+.level-table th {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  text-align: left;
+  padding: 0.8rem 0.5rem;
+  border-bottom: 1px solid var(--gold);
+}
+.level-table td {
+  padding: 0.5rem;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.2);
+  font-size: 0.95rem;
+}
+.level-table tr.current {
+  background: rgba(150, 32, 37, 0.12);
+}
+.level-table tr.current td {
+  color: var(--parchment);
+  font-weight: 500;
+}
+.level-table tr.future {
+  opacity: 0.5;
+}
+
+.footer {
+  text-align: center;
+  padding: 3rem 1rem 1rem;
+  border-top: 1px solid var(--gold-tarnish);
+  margin-top: 4rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  color: var(--gold-tarnish);
+  text-transform: uppercase;
+}
+
+/* Save indicator */
+.save-indicator {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  background: rgba(10, 6, 8, 0.9);
+  border: 1px solid var(--gold-tarnish);
+  padding: 0.4rem 0.8rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 1000;
+}
+.save-indicator.show { opacity: 1; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.section { animation: fadeUp 0.8s ease both; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="eyebrow">A Record of the Bearer · Neverwinter, Year of the Reborn Hero</div>
+    <h1 class="name">Caelen Ravenshade</h1>
+    <div class="epithet">Heir to the Pendant · Vessel of the Hollow Choir</div>
+    <div class="titlebar">
+      <span>Aasimar</span>
+      <span id="title-classes">Hexblade Warlock 1</span>
+      <span>Entertainer · Musician</span>
+      <span>Neutral</span>
+    </div>
+  </header>
+
+  <!-- LEVEL CONTROL -->
+  <div class="level-control">
+    <div class="level-inner">
+      <span class="level-label">Character Level</span>
+      <div class="level-slider-wrap">
+        <input type="range" min="1" max="20" value="1" class="level-slider" id="level-slider">
+        <div class="level-display" id="level-display">1</div>
+      </div>
+      <span class="level-classes" id="level-classes-text">Hexblade Warlock 1</span>
+      <button class="reset-btn" id="reset-btn">Reset Sheet</button>
+    </div>
+  </div>
+
+  <!-- ABILITY SCORES -->
+  <section class="section">
+    <h2 class="section-title">Ability Scores</h2>
+    <div class="stats-grid">
+      <div class="stat-block">
+        <div class="stat-label">STR</div>
+        <div class="stat-value" id="str-val">8</div>
+        <div class="stat-mod" id="str-mod">−1</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">DEX</div>
+        <div class="stat-value" id="dex-val">14</div>
+        <div class="stat-mod" id="dex-mod">+2</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">CON</div>
+        <div class="stat-value" id="con-val">16</div>
+        <div class="stat-mod" id="con-mod">+3</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">INT</div>
+        <div class="stat-value" id="int-val">10</div>
+        <div class="stat-mod" id="int-mod">+0</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">WIS</div>
+        <div class="stat-value" id="wis-val">10</div>
+        <div class="stat-mod" id="wis-mod">+0</div>
+      </div>
+      <div class="stat-block primary">
+        <div class="stat-label">CHA</div>
+        <div class="stat-value" id="cha-val">19</div>
+        <div class="stat-mod" id="cha-mod">+4</div>
+      </div>
+    </div>
+    <p style="text-align:center; font-style:italic; color:var(--parchment-aged); font-size:0.9rem; margin-top: 0.5rem;">
+      Ability score bonuses from Entertainer background: +2 CHA, +1 CON. Starting array: STR 8 · DEX 14 · CON 15 · INT 10 · WIS 10 · CHA 17.
+    </p>
+
+    <div class="defense-row">
+      <div class="defense-cell">
+        <div class="label">Armor Class</div>
+        <div class="value" id="ac-val">12</div>
+        <div class="sub">leather + DEX</div>
+      </div>
+      <div class="defense-cell">
+        <div class="label">Hit Points</div>
+        <div class="hp-current">
+          <input type="number" id="hp-current" value="9" min="0">
+          <span class="sep">/</span>
+          <span id="hp-max">9</span>
+        </div>
+        <div class="sub" id="hp-formula">d8 + 3 (CON)</div>
+      </div>
+      <div class="defense-cell">
+        <div class="label">Initiative</div>
+        <div class="value" id="init-val">+2</div>
+        <div class="sub">DEX</div>
+      </div>
+      <div class="defense-cell">
+        <div class="label">Speed</div>
+        <div class="value">30 ft</div>
+        <div class="sub">walking</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- THE BEARER -->
+  <section class="section">
+    <h2 class="section-title">The Bearer</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>Origins</h3>
+        <ul>
+          <li><strong>Name</strong><br>Caelen Ravenshade</li>
+          <li><strong>Species</strong><br>Aasimar — half-elven mother, celestial father. Has chosen the "fallen" path in flavor though not in alignment.</li>
+          <li><strong>Age</strong><br>19</li>
+          <li><strong>Height / Build</strong><br>5'9", slender, faintly luminous skin even in shadow</li>
+          <li><strong>Eyes</strong><br>Pale gold by day. Something colder after dark.</li>
+          <li><strong>Hair</strong><br>Black, shoulder-length, often tied back for performance</li>
+          <li><strong>Marks</strong><br>Fingertips darkened to charcoal grey at the nails. A cracked silver pendant worn under the collar at all times.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Calling</h3>
+        <ul>
+          <li><strong>Patron</strong><br>The Hollow Choir — a bound entity inherited through the maternal line, contained in a silver pendant until the seal cracked.</li>
+          <li><strong>Sorcerous Origin</strong><br>Wild Magic — celestial blood and aberrant ancestry colliding under pressure from the Choir.</li>
+          <li><strong>Pact Boon</strong><br>Pact of the Chain (at Warlock 3). Familiar: <em>Vex</em>, an imp who suspects his real master is not Caelen but the thing inside the pendant.</li>
+          <li><strong>Languages</strong><br>Common, Celestial, Elvish</li>
+          <li><strong>Faith</strong><br>None openly. Privately, prays to a celestial father he has never met.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMBAT -->
+  <section class="section">
+    <h2 class="section-title">The Engine</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>Eldritch Blast</h3>
+        <p><strong>To Hit</strong> · <span id="eb-tohit">+6</span> · ranged spell attack, 120 ft</p>
+        <p><strong>Damage Per Beam</strong> · <span id="eb-damage">1d10 + 0</span> force</p>
+        <p><strong>Beams</strong> · <span id="eb-beams">1</span> at this level</p>
+        <p style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dotted rgba(184, 137, 58, 0.3);" id="eb-invocations">
+          <em>Agonizing Blast and Repelling Blast unlock at Warlock 2.</em>
+        </p>
+      </div>
+      <div class="card">
+        <h3>Hexblade's Curse</h3>
+        <p>Bonus action. Target one creature within 30 ft you can see. Until you finish a short or long rest, the cursed target:</p>
+        <ul>
+          <li>Takes +<span id="curse-bonus">2</span> bonus damage from your attacks (proficiency bonus)</li>
+          <li>Your weapon and spell attacks score a critical hit on a roll of 19 or 20 against it</li>
+          <li>If it drops to 0 HP, you regain HP equal to your warlock level + CHA mod (<span id="curse-heal">5</span>)</li>
+        </ul>
+        <p style="margin-top: 1rem;"><em>Recharges on a short or long rest.</em></p>
+      </div>
+    </div>
+
+    <div style="margin-top: 2rem;" id="combat-loops">
+      <!-- Filled by JS based on level -->
+    </div>
+  </section>
+
+  <!-- SAVES & SKILLS -->
+  <section class="section">
+    <h2 class="section-title">Proficiencies</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>Saving Throws</h3>
+        <div class="skills-grid" style="grid-template-columns: 1fr;" id="saves-grid">
+          <!-- filled by JS -->
+        </div>
+        <p style="margin-top: 1rem; font-style: italic; font-size: 0.9rem;" id="saves-note">Warlock grants Wisdom and Charisma save proficiency.</p>
+      </div>
+      <div class="card">
+        <h3>Skills</h3>
+        <div class="skills-grid" id="skills-grid">
+          <!-- filled by JS -->
+        </div>
+        <p style="margin-top: 1rem; font-style: italic; font-size: 0.85rem;">Proficiency Bonus: <span id="prof-bonus">+2</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPELLS & SLOTS -->
+  <section class="section">
+    <h2 class="section-title">Magic</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>Spell Slots</h3>
+        <div id="slots-container">
+          <!-- filled by JS -->
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.9rem; font-style: italic;">Click pips to track usage. Spell Save DC: <span id="spell-dc">12</span> · Spell Attack: <span id="spell-atk">+6</span></p>
+        <p style="margin-top: 0.5rem; font-size: 0.9rem; font-style: italic;" id="sorcery-display">
+          Sorcery points unlock at character level 6 (Sorcerer 2).
+        </p>
+      </div>
+      <div class="card">
+        <h3>Musician (Origin Feat)</h3>
+        <p>After a short or long rest, distribute <strong>Bardic Inspiration dice</strong> (d6) equal to your proficiency bonus among allies (including yourself) within 30 ft who can hear you play.</p>
+        <p style="margin-top: 1rem;">Inspiration dice last 1 hour and add to one attack roll, ability check, or saving throw.</p>
+        <p style="margin-top: 1rem;"><em>Instrument: lute.</em></p>
+        <p style="margin-top: 1rem;"><strong>Dice to distribute:</strong> <span id="musician-dice">2</span></p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 2rem;">
+      <h3>Known Spells <span class="header-action">Updated automatically with level</span></h3>
+      <table class="spell-table">
+        <thead>
+          <tr><th style="width: 100px;">Level</th><th>Spell</th><th>Notes</th></tr>
+        </thead>
+        <tbody id="spells-tbody">
+          <!-- filled by JS -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section">
+    <h2 class="section-title">Features &amp; Inheritances</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>Aasimar</h3>
+        <div id="aasimar-features">
+          <div class="feature-block">
+            <h4>Darkvision</h4>
+            <p>60 ft. Sees in dim light as if bright, in darkness as if dim. Black and white only.</p>
+          </div>
+          <div class="feature-block">
+            <h4>Celestial Resistance</h4>
+            <p>Resistance to necrotic and radiant damage.</p>
+          </div>
+          <div class="feature-block">
+            <h4>Light Bearer</h4>
+            <p>Know the Light cantrip. Charisma is the spellcasting ability for it.</p>
+          </div>
+          <div class="feature-block">
+            <h4>Healing Hands</h4>
+            <p>Magic action. Touch a creature, roll <span id="healing-hands-dice">2</span>d4s, restore HP equal to the total. Once per long rest.</p>
+          </div>
+          <div class="feature-block" data-level="3">
+            <h4>Necrotic Shroud</h4>
+            <p>Bonus action, transform for 1 minute: eyes go dark, shadowy wings sprout. Once per turn, deal extra necrotic damage on a hit equal to proficiency bonus (<span id="necrotic-bonus">+2</span>). Creatures within 10 ft must make a CHA save (DC <span id="necrotic-dc">12</span>) or be Frightened until the end of your next turn. Once per long rest.</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Class Features</h3>
+        <div id="class-features">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ALTERNATES -->
+    <div class="card" style="margin-top: 2rem;" id="alternates-card">
+      <h3>Feat &amp; Invocation Choices <span class="header-action">Click to swap alternates</span></h3>
+      <div id="alternates-list">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- INVENTORY -->
+  <section class="section">
+    <h2 class="section-title">Carried</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>Armament <button class="header-action" data-add="armament">+ Add Item</button></h3>
+        <ul class="inventory-list" id="inv-armament"></ul>
+      </div>
+      <div class="card">
+        <h3>On His Person <button class="header-action" data-add="person">+ Add Item</button></h3>
+        <ul class="inventory-list" id="inv-person"></ul>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 2rem;">
+      <h3>Coin &amp; Notes</h3>
+      <p style="margin-bottom: 1rem;"><strong>Coin:</strong>
+        <input type="text" id="coin" style="background:transparent;border:none;border-bottom:1px solid var(--gold-tarnish);color:var(--parchment);font-family:inherit;font-size:1rem;padding:0.2rem;outline:none;width:300px;" value="65 gp in mixed coin, including 50 gp from his last booking">
+      </p>
+      <textarea class="notes-area" id="notes" placeholder="Session notes, NPCs met, leads to follow, things the Choir said..."></textarea>
+    </div>
+  </section>
+
+  <!-- QUOTE -->
+  <div class="quote">
+    <p>I tell people I am a wandering scholar. The voices laugh every time I say it.</p>
+    <cite>— Caelen Ravenshade, in a letter never sent</cite>
+  </div>
+
+  <!-- LEVELING PATH -->
+  <section class="section">
+    <h2 class="section-title">The Path Ahead</h2>
+    <div class="card">
+      <h3>Level-by-Level Outline</h3>
+      <table class="level-table">
+        <thead>
+          <tr><th style="width: 50px;">Lvl</th><th>Class</th><th>Gains</th></tr>
+        </thead>
+        <tbody id="level-table-body">
+          <!-- filled by JS -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">
+    Recorded in Neverwinter, beneath a sky that does not quite belong to him.
+  </footer>
+
+</div>
+
+<div class="save-indicator" id="save-indicator">Saved</div>
+
+<script>
+// ============================================================
+// BUILD DATA — single source of truth
+// ============================================================
+
+const BASE_STATS = { str: 8, dex: 14, con: 15, int: 10, wis: 10, cha: 17 };
+// Background bonuses (Entertainer): +2 CHA, +1 CON
+const BG_BONUS = { cha: 2, con: 1 };
+
+// Per-level data. Each entry describes the CHANGES at that level.
+// Stat increases (asi) are CUMULATIVE.
+const LEVEL_DATA = [
+  null, // padding so index = level
+  // L1
+  { warlock: 1, sorcerer: 0, classGain: 'Pact Magic, Hexblade\'s Curse, Hex Warrior, Eldritch Blast', subclass: 'Hexblade' },
+  // L2
+  { warlock: 2, sorcerer: 0, classGain: 'Eldritch Invocations: Agonizing Blast, Repelling Blast' },
+  // L3
+  { warlock: 3, sorcerer: 0, classGain: 'Pact of the Chain (summon Vex, imp familiar)' },
+  // L4
+  { warlock: 4, sorcerer: 0, classGain: 'Feat',
+    feat: {
+      id: 'lvl4-feat',
+      label: 'Level 4 Feat',
+      options: [
+        { id: 'inspiring', name: 'Inspiring Leader', effect: 'After a 10-minute rest, you and up to 5 allies who hear your speech gain temp HP = level + CHA mod.' },
+        { id: 'warcaster', name: 'War Caster', effect: 'Advantage on concentration saves. Cast spells as opportunity attacks. Somatic components with hands full.' }
+      ],
+      default: 'inspiring'
+    }
+  },
+  // L5
+  { warlock: 4, sorcerer: 1, classGain: 'Innate Sorcery, Wild Magic Surge table, Sorcerer spellcasting' },
+  // L6
+  { warlock: 4, sorcerer: 2, classGain: 'Font of Magic — sorcery points online' },
+  // L7
+  { warlock: 4, sorcerer: 3, classGain: 'Metamagic: Quickened Spell + Subtle Spell', subclass2: 'Wild Magic' },
+  // L8
+  { warlock: 4, sorcerer: 4, classGain: 'Feat',
+    feat: {
+      id: 'lvl8-feat',
+      label: 'Level 8 Feat',
+      options: [
+        { id: 'resilient-con', name: 'Resilient (CON)', effect: '+1 CON, gain Constitution save proficiency — locks in concentration.', asi: { con: 1 }, saveProf: 'con' },
+        { id: 'speedy', name: 'Speedy', effect: '+10 ft walking speed, ignore difficult terrain caused by spells, +1 DEX.', asi: { dex: 1 } }
+      ],
+      default: 'resilient-con'
+    }
+  },
+  // L9
+  { warlock: 4, sorcerer: 5, classGain: '3rd-level spells: Counterspell, Fireball, Hypnotic Pattern, Fly' },
+  // L10
+  { warlock: 4, sorcerer: 6, classGain: 'Wild Magic: Bend Luck — spend 2 sorcery points to add or subtract a d4 from any roll within 30 ft' },
+  // L11
+  { warlock: 4, sorcerer: 7, classGain: 'Eldritch Blast scales to 3 beams; 4th-level spells: Greater Invisibility, Polymorph' },
+  // L12
+  { warlock: 4, sorcerer: 8, classGain: 'ASI: CHA 20', asi: { cha: 2 } },
+  // L13
+  { warlock: 4, sorcerer: 9, classGain: '5th-level spells: Wall of Force, Synaptic Static' },
+  // L14
+  { warlock: 4, sorcerer: 10, classGain: '4th Metamagic, final cantrip', subclassGain: 'Wild Magic: Controlled Chaos' },
+  // L15
+  { warlock: 4, sorcerer: 11, classGain: '6th-level spells: Disintegrate, Chain Lightning' },
+  // L16
+  { warlock: 4, sorcerer: 12, classGain: 'Feat',
+    feat: {
+      id: 'lvl16-feat',
+      label: 'Level 16 Feat',
+      options: [
+        { id: 'warcaster16', name: 'War Caster', effect: 'Advantage on concentration saves, somatic components with hands full.' },
+        { id: 'lucky', name: 'Lucky', effect: '3 Luck Points per long rest, reroll attacks/saves/checks or force enemies to reroll.' },
+        { id: 'asi-cha-con', name: 'ASI: +1 CHA / +1 CON', effect: 'Boring but boring works.', asi: { cha: 1, con: 1 } }
+      ],
+      default: 'warcaster16'
+    }
+  },
+  // L17
+  { warlock: 4, sorcerer: 13, classGain: '7th-level spells; Eldritch Blast scales to 4 beams' },
+  // L18
+  { warlock: 4, sorcerer: 14, classGain: '8th-level spells' },
+  // L19
+  { warlock: 4, sorcerer: 15, classGain: 'ASI: CON 20', asi: { con: 2 } },
+  // L20
+  { warlock: 4, sorcerer: 16, classGain: '9th-level spells; final character level' }
+];
+
+// Spell scaling: when each spell is gained (charLevel)
+const SPELLS = [
+  // Cantrips
+  { name: 'Eldritch Blast', level: 'Cantrip', class: 'Warlock', gained: 1, notes: 'The Engine. Force damage, 120 ft, ranged spell attack.' },
+  { name: 'Light', level: 'Cantrip', class: 'Aasimar', gained: 1, notes: 'Touch object, sheds bright light 20 ft.' },
+  { name: 'Prestidigitation', level: 'Cantrip', class: 'Warlock', gained: 1, notes: 'Minor magical effects. Tuning strings, lighting candles.' },
+  { name: 'Mage Hand', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Spectral floating hand. 30 ft range.' },
+  { name: 'Minor Illusion', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Sound or image, 1 minute.' },
+  { name: 'Mold Earth', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Excavate or shape stone/earth in a 5-ft cube.' },
+  { name: 'Shape Water', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Manipulate up to 5 ft cube of water.' },
+  // 1st level
+  { name: 'Hex', level: '1st', class: 'Warlock', gained: 1, notes: 'Bonus action. 1d6 necrotic on hits. Moves to new target when current drops.' },
+  { name: 'Hideous Laughter', level: '1st', class: 'Warlock', gained: 1, notes: 'WIS save, target prone and incapacitated on fail.' },
+  { name: 'Find Familiar', level: '1st', class: 'Pact of the Chain', gained: 3, notes: 'Summons Vex, an imp.' },
+  { name: 'Shield', level: '1st', class: 'Hexblade', gained: 1, notes: '+5 AC reaction, no damage from Magic Missile.' },
+  { name: 'Magic Missile', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Three force darts, auto-hit, 1d4+1 each.' },
+  { name: 'Silvery Barbs', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Reaction: force reroll of successful attack/save/check, give ally advantage.' },
+  { name: 'Absorb Elements', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Reaction: resistance to triggering element until next turn.' },
+  // 2nd level
+  { name: 'Mirror Image', level: '2nd', class: 'Warlock', gained: 5, notes: 'Three duplicates, attackers may hit a duplicate instead.' },
+  { name: 'Misty Step', level: '2nd', class: 'Sorcerer', gained: 5, notes: 'Bonus action teleport 30 ft.' },
+  { name: 'Suggestion', level: '2nd', class: 'Warlock', gained: 3, notes: 'WIS save, target follows reasonable command for up to 8 hours.' },
+  // 3rd level
+  { name: 'Counterspell', level: '3rd', class: 'Sorcerer', gained: 9, notes: 'Reaction: shut down enemy spell up to 3rd level automatically.' },
+  { name: 'Fireball', level: '3rd', class: 'Sorcerer', gained: 9, notes: '8d6 fire, 20 ft radius, DEX save half.' },
+  { name: 'Hypnotic Pattern', level: '3rd', class: 'Sorcerer', gained: 9, notes: 'WIS save, charm + incapacitate in 30 ft cube.' },
+  { name: 'Fly', level: '3rd', class: 'Sorcerer', gained: 9, notes: '60 ft fly speed, concentration, 10 min.' },
+  // 4th
+  { name: 'Greater Invisibility', level: '4th', class: 'Sorcerer', gained: 11, notes: 'Invisible while concentrating. Advantage on attacks.' },
+  { name: 'Polymorph', level: '4th', class: 'Sorcerer', gained: 11, notes: 'Transform creature into a beast. 1 hour.' },
+  // 5th
+  { name: 'Wall of Force', level: '5th', class: 'Sorcerer', gained: 13, notes: 'Invisible wall, blocks everything for 10 min.' },
+  { name: 'Synaptic Static', level: '5th', class: 'Sorcerer', gained: 13, notes: '8d6 psychic in 20 ft radius, INT save half + −1d6 to attacks/checks.' },
+  // 6th
+  { name: 'Disintegrate', level: '6th', class: 'Sorcerer', gained: 15, notes: '10d6+40 force damage, target turned to dust if killed.' },
+  { name: 'Chain Lightning', level: '6th', class: 'Sorcerer', gained: 15, notes: '10d8 lightning, primary + 3 secondary targets.' },
+  // 7th
+  { name: 'Forcecage', level: '7th', class: 'Sorcerer', gained: 17, notes: 'Inescapable box of force, 1 hour.' },
+  { name: 'Plane Shift', level: '7th', class: 'Sorcerer', gained: 17, notes: 'Travel to another plane or banish creature.' },
+  // 8th
+  { name: 'Sunburst', level: '8th', class: 'Sorcerer', gained: 18, notes: '12d6 radiant in 60 ft radius, blinds on fail.' },
+  // 9th
+  { name: 'Wish', level: '9th', class: 'Sorcerer', gained: 20, notes: 'The most powerful spell. Use carefully.' }
+];
+
+// Sorcerer multiclass spell slot table — based on Sorcerer level only since Warlock uses Pact Magic separately
+const SORC_SLOTS = {
+  0: [],
+  1: [2],            // 2 first-level slots
+  2: [3],
+  3: [4, 2],
+  4: [4, 3],
+  5: [4, 3, 2],
+  6: [4, 3, 3],
+  7: [4, 3, 3, 1],
+  8: [4, 3, 3, 2],
+  9: [4, 3, 3, 3, 1],
+  10: [4, 3, 3, 3, 2],
+  11: [4, 3, 3, 3, 2, 1],
+  12: [4, 3, 3, 3, 2, 1],
+  13: [4, 3, 3, 3, 2, 1, 1],
+  14: [4, 3, 3, 3, 2, 1, 1],
+  15: [4, 3, 3, 3, 2, 1, 1, 1],
+  16: [4, 3, 3, 3, 2, 1, 1, 1]
+};
+
+// Pact Magic slots (Warlock-only, separate from above)
+function pactSlots(warlockLevel) {
+  if (warlockLevel === 0) return null;
+  if (warlockLevel === 1) return { count: 1, level: 1 };
+  if (warlockLevel === 2) return { count: 2, level: 1 };
+  if (warlockLevel === 3) return { count: 2, level: 2 };
+  return { count: 2, level: 2 }; // 4 = 2 slots at 2nd
+}
+
+// Class features that gate on level
+const CLASS_FEATURES = [
+  // Warlock
+  { id: 'pact-magic', name: 'Pact Magic', level: 1, source: 'Warlock', desc: 'Spell slots recover on a short or long rest. All pact slots are the same level.' },
+  { id: 'hex-warrior', name: 'Hex Warrior', level: 1, source: 'Warlock (Hexblade)', desc: 'Use CHA instead of STR/DEX for attack and damage with one bonded weapon (the sickle).' },
+  { id: 'hexblades-curse', name: "Hexblade's Curse", level: 1, source: 'Warlock (Hexblade)', desc: 'See "The Engine" section above.' },
+  { id: 'agonizing', name: 'Agonizing Blast', level: 2, source: 'Eldritch Invocation', desc: 'Add CHA mod to each beam of Eldritch Blast.' },
+  { id: 'repelling', name: 'Repelling Blast', level: 2, source: 'Eldritch Invocation', desc: 'Push targets 10 ft on Eldritch Blast hit.' },
+  { id: 'pact-chain', name: 'Pact of the Chain', level: 3, source: 'Warlock', desc: 'Summon a familiar (Imp: Vex). 60-ft telepathy, invisibility, can deliver touch spells.' },
+  // Sorcerer
+  { id: 'innate-sorcery', name: 'Innate Sorcery', level: 5, source: 'Sorcerer', desc: 'Twice per day, bonus action: +1 spell save DC and advantage on spell attack rolls for 1 minute.' },
+  { id: 'wild-magic-table', name: 'Wild Magic Surge', level: 5, source: 'Sorcerer (Wild Magic)', desc: 'When you cast a Sorcerer spell of 1st level or higher, you may roll on the surge table.' },
+  { id: 'font-of-magic', name: 'Font of Magic', level: 6, source: 'Sorcerer', desc: 'Sorcery points = Sorcerer level. Convert slots to points and back.' },
+  { id: 'metamagic', name: 'Metamagic', level: 7, source: 'Sorcerer', desc: 'Quickened Spell (cast as bonus action) + Subtle Spell (no verbal/somatic).' },
+  { id: 'bend-luck', name: 'Bend Luck', level: 10, source: 'Wild Magic', desc: 'Spend 2 sorcery points to add or subtract a d4 from a roll within 30 ft (reaction).' },
+  { id: 'controlled-chaos', name: 'Controlled Chaos', level: 14, source: 'Wild Magic', desc: 'When you roll on the Wild Magic table, roll twice and pick the result.' }
+];
+
+// Combat loops by level
+const COMBAT_LOOPS = [
+  { minLevel: 1, name: 'Standard Turn (Levels 1-6)', desc: 'Hex on the priority target (bonus action) → Eldritch Blast (action). Maintain Hex; move it to a new target as a bonus action when one drops.' },
+  { minLevel: 7, name: 'Standard Turn (Level 7+)', desc: 'Eldritch Blast (action) → Quickened Spell, 2 sorcery points → Eldritch Blast (bonus action). Two full attack sequences per turn.' },
+  { minLevel: 1, name: 'Hard Fight Opener', desc: 'Turn 1: Hex (bonus action), Eldritch Blast. Turn 2: Hexblade\'s Curse (bonus action), Eldritch Blast. Turn 3+: settle into the Standard Loop.' },
+  { minLevel: 9, name: 'Emergency Turn', desc: 'Counterspell on their big spell (reaction) → Eldritch Blast (action) → Shield or Silvery Barbs as needed (reaction).' }
+];
+
+const SKILL_LIST = [
+  { name: 'Athletics', ability: 'str' },
+  { name: 'Acrobatics', ability: 'dex', prof: true },
+  { name: 'Sleight of Hand', ability: 'dex' },
+  { name: 'Stealth', ability: 'dex' },
+  { name: 'Arcana', ability: 'int', prof: true },
+  { name: 'History', ability: 'int' },
+  { name: 'Investigation', ability: 'int' },
+  { name: 'Nature', ability: 'int' },
+  { name: 'Religion', ability: 'int' },
+  { name: 'Animal Handling', ability: 'wis' },
+  { name: 'Insight', ability: 'wis' },
+  { name: 'Medicine', ability: 'wis' },
+  { name: 'Perception', ability: 'wis' },
+  { name: 'Survival', ability: 'wis' },
+  { name: 'Deception', ability: 'cha', prof: true },
+  { name: 'Intimidation', ability: 'cha', prof: true },
+  { name: 'Performance', ability: 'cha', prof: true },
+  { name: 'Persuasion', ability: 'cha' }
+];
+
+const DEFAULT_INVENTORY = {
+  armament: [
+    'Sickle · simple melee weapon, the bonded blade for Hex Warrior. Was his mother\'s, for cutting herbs.',
+    'Daggers (2) · sheathed at the small of the back. Last resort.',
+    'Light Crossbow · with 20 bolts. Carried but rarely fired.',
+    'Leather Armor · soft, oiled, dark.',
+    'Arcane Focus · a fragment of obsidian set into the cracked silver pendant.'
+  ],
+  person: [
+    'The Pendant · cracked silver, his mother\'s. Worn always.',
+    'A Lute · second-hand, three pegs replaced. The one true joy he allows himself.',
+    'Scholar\'s Pack · book of cantrips, ink, parchment, ten torches, ten days\' rations, waterskin.',
+    'Letters · seven, sealed, addressed to "Sarielle Ravenshade, anywhere." Never sent.'
+  ]
+};
+
+// ============================================================
+// STATE MANAGEMENT
+// ============================================================
+
+const STORAGE_KEY = 'caelen-sheet-v1';
+
+const DEFAULT_STATE = {
+  schemaVersion: 1,
+  level: 1,
+  hpCurrent: null, // null = match max
+  coin: '65 gp in mixed coin, including 50 gp from his last booking',
+  notes: '',
+  inventory: JSON.parse(JSON.stringify(DEFAULT_INVENTORY)),
+  alternates: {}, // featId -> optionId
+  usedSlots: { warlock: 0, sorc1: 0, sorc2: 0, sorc3: 0, sorc4: 0, sorc5: 0, sorc6: 0, sorc7: 0, sorc8: 0 }
+};
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const parsed = JSON.parse(raw);
+    // Merge defaults for missing keys (forward compat)
+    return { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...parsed };
+  } catch (e) {
+    console.error('Failed to load state', e);
+    return JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+}
+
+let saveTimer = null;
+function saveState() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      showSaveIndicator();
+    } catch (e) { console.error('Save failed', e); }
+  }, 400);
+}
+
+function showSaveIndicator() {
+  const ind = document.getElementById('save-indicator');
+  ind.classList.add('show');
+  clearTimeout(showSaveIndicator._t);
+  showSaveIndicator._t = setTimeout(() => ind.classList.remove('show'), 1200);
+}
+
+// ============================================================
+// COMPUTED VALUES
+// ============================================================
+
+function mod(score) { return Math.floor((score - 10) / 2); }
+function fmtMod(m) { return m >= 0 ? '+' + m : '−' + Math.abs(m); }
+
+function computeStats(level) {
+  // Start with base + background
+  const stats = { ...BASE_STATS };
+  for (const [k, v] of Object.entries(BG_BONUS)) stats[k] += v;
+
+  // Apply level-based ASIs cumulatively
+  for (let l = 1; l <= level; l++) {
+    const ld = LEVEL_DATA[l];
+    if (!ld) continue;
+    // Built-in ASI
+    if (ld.asi) {
+      for (const [k, v] of Object.entries(ld.asi)) stats[k] += v;
+    }
+    // Feat-based ASI (depends on alternate choice)
+    if (ld.feat) {
+      const chosen = state.alternates[ld.feat.id] || ld.feat.default;
+      const opt = ld.feat.options.find(o => o.id === chosen);
+      if (opt && opt.asi) {
+        for (const [k, v] of Object.entries(opt.asi)) stats[k] += v;
+      }
+    }
+  }
+  // Cap at 20
+  for (const k of Object.keys(stats)) stats[k] = Math.min(20, stats[k]);
+  return stats;
+}
+
+function profBonus(level) {
+  if (level >= 17) return 6;
+  if (level >= 13) return 5;
+  if (level >= 9) return 4;
+  if (level >= 5) return 3;
+  return 2;
+}
+
+function classBreakdown(level) {
+  if (level < 1) return { w: 0, s: 0 };
+  const ld = LEVEL_DATA[level];
+  return { w: ld.warlock, s: ld.sorcerer };
+}
+
+function classString(level) {
+  const { w, s } = classBreakdown(level);
+  const parts = [];
+  if (w > 0) parts.push(`Hexblade Warlock ${w}`);
+  if (s > 0) parts.push(`Wild Magic Sorcerer ${s}`);
+  return parts.join(' / ');
+}
+
+function ebBeams(level) {
+  if (level >= 17) return 4;
+  if (level >= 11) return 3;
+  if (level >= 5) return 2;
+  return 1;
+}
+
+function computeHP(level, stats) {
+  // Warlock d8: level 1 = 8 + CON mod. Levels 2-4 (more Warlock) = +5 + CON each
+  // Sorcerer d6: each Sorcerer level = +4 + CON each
+  const conMod = mod(stats.con);
+  const { w, s } = classBreakdown(level);
+  let hp = 8 + conMod; // L1 max die
+  // Warlock levels 2+
+  for (let i = 2; i <= w; i++) hp += 5 + conMod;
+  // Sorcerer levels
+  for (let i = 1; i <= s; i++) hp += 4 + conMod;
+  return Math.max(1, hp);
+}
+
+function hasSaveProf(stat, level) {
+  // Warlock saves: WIS + CHA
+  if (stat === 'wis' || stat === 'cha') return true;
+  // Check if Resilient(CON) was taken
+  for (let l = 1; l <= level; l++) {
+    const ld = LEVEL_DATA[l];
+    if (ld && ld.feat) {
+      const chosen = state.alternates[ld.feat.id] || ld.feat.default;
+      const opt = ld.feat.options.find(o => o.id === chosen);
+      if (opt && opt.saveProf === stat) return true;
+    }
+  }
+  return false;
+}
+
+function hasFeat(featId, level) {
+  for (let l = 1; l <= level; l++) {
+    const ld = LEVEL_DATA[l];
+    if (ld && ld.feat) {
+      const chosen = state.alternates[ld.feat.id] || ld.feat.default;
+      if (chosen === featId) return true;
+    }
+  }
+  return false;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+
+function render() {
+  const level = state.level;
+  const stats = computeStats(level);
+  const pb = profBonus(level);
+  const { w, s } = classBreakdown(level);
+  const hp = computeHP(level, stats);
+
+  // Title bar
+  document.getElementById('title-classes').textContent = classString(level);
+  document.getElementById('level-classes-text').textContent = classString(level);
+  document.getElementById('level-display').textContent = level;
+
+  // Stats
+  for (const stat of ['str','dex','con','int','wis','cha']) {
+    const v = stats[stat];
+    const valEl = document.getElementById(`${stat}-val`);
+    const oldVal = parseInt(valEl.textContent, 10);
+    valEl.textContent = v;
+    document.getElementById(`${stat}-mod`).textContent = fmtMod(mod(v));
+    // Flash if changed
+    if (oldVal !== v) {
+      valEl.classList.add('changed');
+      setTimeout(() => valEl.classList.remove('changed'), 1500);
+    }
+  }
+
+  // Defense
+  document.getElementById('ac-val').textContent = 11 + mod(stats.dex); // leather + DEX
+  document.getElementById('hp-max').textContent = hp;
+  document.getElementById('init-val').textContent = fmtMod(mod(stats.dex));
+
+  // HP current
+  if (state.hpCurrent === null) {
+    document.getElementById('hp-current').value = hp;
+  } else {
+    document.getElementById('hp-current').value = Math.min(state.hpCurrent, hp);
+  }
+  document.getElementById('hp-formula').textContent =
+    `${w > 0 ? `${w}d8` : ''}${w > 0 && s > 0 ? ' + ' : ''}${s > 0 ? `${s}d6` : ''} + ${mod(stats.con) * (w + s)} CON`;
+
+  // EB
+  const beams = ebBeams(level);
+  const chaMod = mod(stats.cha);
+  const hasAgonizing = level >= 2;
+  const ebDamage = hasAgonizing ? `1d10 + ${chaMod}` : '1d10';
+  document.getElementById('eb-tohit').textContent = fmtMod(pb + chaMod);
+  document.getElementById('eb-damage').textContent = ebDamage;
+  document.getElementById('eb-beams').textContent = beams;
+  // Invocations note
+  const invNote = document.getElementById('eb-invocations');
+  if (level >= 2) {
+    invNote.innerHTML = `<em>Agonizing Blast: +${chaMod} per beam. Repelling Blast: push 10 ft on hit.</em>`;
+  } else {
+    invNote.innerHTML = '<em>Agonizing Blast and Repelling Blast unlock at Warlock 2 (next level).</em>';
+  }
+
+  // Curse
+  document.getElementById('curse-bonus').textContent = pb;
+  document.getElementById('curse-heal').textContent = w + chaMod;
+
+  // Healing Hands & Necrotic Shroud (use PB)
+  document.getElementById('healing-hands-dice').textContent = pb;
+  document.getElementById('necrotic-bonus').textContent = '+' + pb;
+  document.getElementById('necrotic-dc').textContent = 8 + chaMod + pb;
+  // Necrotic Shroud locked under level 3
+  const necroticBlock = document.querySelector('[data-level="3"]');
+  if (necroticBlock) {
+    if (level < 3) necroticBlock.classList.add('locked');
+    else necroticBlock.classList.remove('locked');
+  }
+
+  // Saves
+  const savesGrid = document.getElementById('saves-grid');
+  savesGrid.innerHTML = '';
+  for (const stat of ['str','dex','con','int','wis','cha']) {
+    const proficient = hasSaveProf(stat, level);
+    const value = mod(stats[stat]) + (proficient ? pb : 0);
+    const labels = { str: 'Strength', dex: 'Dexterity', con: 'Constitution', int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma' };
+    const row = document.createElement('div');
+    row.className = 'skill-row' + (proficient ? ' proficient' : '');
+    row.innerHTML = `<span class="skill-name">${labels[stat]}</span><span class="skill-value">${fmtMod(value)}</span>`;
+    savesGrid.appendChild(row);
+  }
+  const conProf = hasSaveProf('con', level);
+  document.getElementById('saves-note').textContent = conProf
+    ? 'Warlock grants Wisdom and Charisma save proficiency. Resilient (CON) adds Constitution — concentration is rock solid.'
+    : 'Warlock grants Wisdom and Charisma save proficiency.';
+
+  // Skills
+  const skillsGrid = document.getElementById('skills-grid');
+  skillsGrid.innerHTML = '';
+  for (const skill of SKILL_LIST) {
+    const proficient = skill.prof;
+    const value = mod(stats[skill.ability]) + (proficient ? pb : 0);
+    const row = document.createElement('div');
+    row.className = 'skill-row' + (proficient ? ' proficient' : '');
+    row.innerHTML = `<span class="skill-name">${skill.name} (${skill.ability.toUpperCase()})</span><span class="skill-value">${fmtMod(value)}</span>`;
+    skillsGrid.appendChild(row);
+  }
+
+  document.getElementById('prof-bonus').textContent = fmtMod(pb);
+
+  // Spell DC / Attack
+  document.getElementById('spell-dc').textContent = 8 + chaMod + pb;
+  document.getElementById('spell-atk').textContent = fmtMod(chaMod + pb);
+
+  // Musician dice = PB
+  document.getElementById('musician-dice').textContent = pb;
+
+  // Spell slots
+  renderSlots(level);
+
+  // Sorcery points
+  const sp = document.getElementById('sorcery-display');
+  if (s >= 2) {
+    sp.textContent = `Sorcery points: ${s} (= Sorcerer level). Convert pact slots for more.`;
+  } else {
+    sp.textContent = 'Sorcery points unlock at character level 6 (Sorcerer 2).';
+  }
+
+  // Spells
+  renderSpells(level);
+
+  // Class features
+  renderClassFeatures(level);
+
+  // Alternates
+  renderAlternates(level);
+
+  // Combat loops
+  renderCombatLoops(level);
+
+  // Level table
+  renderLevelTable(level);
+
+  // Inventory
+  renderInventory();
+  document.getElementById('coin').value = state.coin;
+  document.getElementById('notes').value = state.notes;
+}
+
+function renderSlots(level) {
+  const container = document.getElementById('slots-container');
+  container.innerHTML = '';
+  const { w, s } = classBreakdown(level);
+
+  // Pact slots (warlock)
+  const pact = pactSlots(w);
+  if (pact) {
+    const row = document.createElement('div');
+    row.className = 'slot-row';
+    row.innerHTML = `<span class="slot-label">Pact · ${ordinal(pact.level)}</span><div class="slot-pips" data-slot="warlock"></div>`;
+    container.appendChild(row);
+    const pips = row.querySelector('.slot-pips');
+    for (let i = 0; i < pact.count; i++) {
+      const pip = document.createElement('div');
+      pip.className = 'pip' + (i < state.usedSlots.warlock ? '' : ' filled');
+      pip.addEventListener('click', () => togglePip('warlock', i, pact.count));
+      pips.appendChild(pip);
+    }
+  }
+
+  // Sorcerer slots
+  const sorcSlots = SORC_SLOTS[s] || [];
+  sorcSlots.forEach((count, idx) => {
+    const lvl = idx + 1;
+    const key = `sorc${lvl}`;
+    const row = document.createElement('div');
+    row.className = 'slot-row';
+    row.innerHTML = `<span class="slot-label">Sorcerer · ${ordinal(lvl)}</span><div class="slot-pips" data-slot="${key}"></div>`;
+    container.appendChild(row);
+    const pips = row.querySelector('.slot-pips');
+    for (let i = 0; i < count; i++) {
+      const pip = document.createElement('div');
+      pip.className = 'pip' + (i < (state.usedSlots[key] || 0) ? '' : ' filled');
+      pip.addEventListener('click', () => togglePip(key, i, count));
+      pips.appendChild(pip);
+    }
+  });
+
+  if (!pact && sorcSlots.length === 0) {
+    container.innerHTML = '<p style="font-style: italic; color: var(--parchment-aged);">No spell slots at this level.</p>';
+  }
+}
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function togglePip(slotKey, index, max) {
+  const current = state.usedSlots[slotKey] || 0;
+  // Click on a filled pip = use it (increment used). Click on used pip = restore (decrement)
+  // Simpler: each pip toggles its own state. Compute new used based on click position.
+  // If pip at index is currently "filled" (available), clicking uses it → used = index + 1 if it's the highest available
+  // Cleanest: pip at index is filled if index >= used. Clicking it flips.
+  if (index >= current) {
+    // This pip is filled (available) — use it. Set used to index + 1
+    state.usedSlots[slotKey] = index + 1;
+  } else {
+    // This pip is empty (used) — restore. Set used to index
+    state.usedSlots[slotKey] = index;
+  }
+  saveState();
+  renderSlots(state.level);
+}
+
+function renderSpells(level) {
+  const tbody = document.getElementById('spells-tbody');
+  tbody.innerHTML = '';
+  // Sort: by level (cantrip first), then alphabetical
+  const levelOrder = { 'Cantrip': 0, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4, '5th': 5, '6th': 6, '7th': 7, '8th': 8, '9th': 9 };
+  const sorted = [...SPELLS].sort((a, b) => {
+    const al = levelOrder[a.level], bl = levelOrder[b.level];
+    if (al !== bl) return al - bl;
+    return a.name.localeCompare(b.name);
+  });
+
+  const nextLevel = level + 1;
+  for (const spell of sorted) {
+    if (spell.gained <= level) {
+      // Known
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><span class="level-tag">${spell.level}</span></td><td class="spell-name">${spell.name}</td><td class="spell-source">${spell.notes}</td>`;
+      tbody.appendChild(tr);
+    } else if (spell.gained === nextLevel) {
+      // Preview
+      const tr = document.createElement('tr');
+      tr.className = 'preview';
+      tr.innerHTML = `<td><span class="level-tag">${spell.level}</span></td><td class="spell-name">${spell.name}<span class="preview-tag">Next Level</span></td><td class="spell-source">${spell.notes}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+}
+
+function renderClassFeatures(level) {
+  const container = document.getElementById('class-features');
+  container.innerHTML = '';
+  for (const f of CLASS_FEATURES) {
+    const block = document.createElement('div');
+    block.className = 'feature-block' + (f.level > level ? ' locked' : '');
+    block.setAttribute('data-level', f.level);
+    block.innerHTML = `<h4>${f.name}</h4><p><em>(${f.source})</em> ${f.desc}</p>`;
+    container.appendChild(block);
+  }
+}
+
+function renderAlternates(level) {
+  const container = document.getElementById('alternates-list');
+  container.innerHTML = '';
+
+  let any = false;
+  for (let l = 1; l <= level; l++) {
+    const ld = LEVEL_DATA[l];
+    if (!ld || !ld.feat) continue;
+    any = true;
+    const feat = ld.feat;
+    const chosen = state.alternates[feat.id] || feat.default;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'alt-control';
+    wrapper.innerHTML = `<div class="alt-title">Level ${l} · ${feat.label}</div>`;
+
+    for (const opt of feat.options) {
+      const label = document.createElement('label');
+      const id = `${feat.id}-${opt.id}`;
+      label.innerHTML = `<input type="radio" name="${feat.id}" value="${opt.id}" ${chosen === opt.id ? 'checked' : ''}><span><strong>${opt.name}</strong> — ${opt.effect}</span>`;
+      wrapper.appendChild(label);
+    }
+    container.appendChild(wrapper);
+  }
+
+  // Listen for radio changes
+  container.querySelectorAll('input[type=radio]').forEach(r => {
+    r.addEventListener('change', () => {
+      state.alternates[r.name] = r.value;
+      saveState();
+      render();
+    });
+  });
+
+  if (!any) {
+    container.innerHTML = '<p style="color: var(--parchment-aged); font-style: italic;">First feat decision at level 4.</p>';
+  }
+}
+
+function renderCombatLoops(level) {
+  const container = document.getElementById('combat-loops');
+  container.innerHTML = '';
+  for (const loop of COMBAT_LOOPS) {
+    if (loop.minLevel > level) continue;
+    // Don't show "Standard Turn (Levels 1-6)" if we have the level 7+ version
+    if (loop.name.includes('1-6') && level >= 7) continue;
+    const div = document.createElement('div');
+    div.className = 'loop';
+    div.innerHTML = `<div class="loop-name">${loop.name}</div><p>${loop.desc}</p>`;
+    container.appendChild(div);
+  }
+}
+
+function renderLevelTable(currentLevel) {
+  const tbody = document.getElementById('level-table-body');
+  tbody.innerHTML = '';
+  for (let l = 1; l <= 20; l++) {
+    const ld = LEVEL_DATA[l];
+    const tr = document.createElement('tr');
+    if (l === currentLevel) tr.className = 'current';
+    else if (l > currentLevel) tr.className = 'future';
+    const classStr = ld.warlock > 0 && ld.sorcerer === 0
+      ? `Hexblade Warlock ${ld.warlock}`
+      : ld.sorcerer > 0 && ld.warlock === 0
+        ? `Wild Magic Sorcerer ${ld.sorcerer}`
+        : `Warlock ${ld.warlock} / Sorcerer ${ld.sorcerer}`;
+    tr.innerHTML = `<td><strong>${l}</strong></td><td>${classStr}</td><td>${ld.classGain}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function renderInventory() {
+  for (const cat of ['armament', 'person']) {
+    const ul = document.getElementById('inv-' + cat);
+    ul.innerHTML = '';
+    state.inventory[cat].forEach((item, idx) => {
+      const li = document.createElement('li');
+      li.className = 'inv-item';
+      const textarea = document.createElement('textarea');
+      textarea.className = 'inv-text';
+      textarea.value = item;
+      textarea.rows = 1;
+      textarea.addEventListener('input', (e) => {
+        autoSizeTextarea(e.target);
+        state.inventory[cat][idx] = e.target.value;
+        saveState();
+      });
+      const remove = document.createElement('button');
+      remove.className = 'inv-remove';
+      remove.innerHTML = '×';
+      remove.title = 'Remove item';
+      remove.addEventListener('click', () => {
+        state.inventory[cat].splice(idx, 1);
+        saveState();
+        renderInventory();
+      });
+      li.appendChild(textarea);
+      li.appendChild(remove);
+      ul.appendChild(li);
+      autoSizeTextarea(textarea);
+    });
+  }
+}
+
+function autoSizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+// ============================================================
+// EVENT WIRING
+// ============================================================
+
+document.getElementById('level-slider').addEventListener('input', (e) => {
+  state.level = parseInt(e.target.value, 10);
+  state.hpCurrent = null; // Reset to max on level change
+  saveState();
+  render();
+});
+
+document.getElementById('hp-current').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value, 10);
+  state.hpCurrent = isNaN(v) ? null : v;
+  saveState();
+});
+
+document.getElementById('coin').addEventListener('input', (e) => {
+  state.coin = e.target.value;
+  saveState();
+});
+
+document.getElementById('notes').addEventListener('input', (e) => {
+  state.notes = e.target.value;
+  saveState();
+});
+
+document.querySelectorAll('[data-add]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const cat = btn.getAttribute('data-add');
+    state.inventory[cat].push('');
+    saveState();
+    renderInventory();
+    // Focus the new field
+    const ul = document.getElementById('inv-' + cat);
+    const lastInput = ul.querySelector('li:last-child textarea');
+    if (lastInput) lastInput.focus();
+  });
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (confirm('Reset the entire sheet to defaults? All your edits, level, inventory, and notes will be lost.')) {
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    localStorage.removeItem(STORAGE_KEY);
+    document.getElementById('level-slider').value = state.level;
+    render();
+  }
+});
+
+// Sync slider to loaded level
+document.getElementById('level-slider').value = state.level;
+
+// Initial render
+render();
+
+</script>
+
+</body>
+</html>
