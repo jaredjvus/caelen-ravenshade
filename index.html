@@ -948,6 +948,7 @@ body.dm-mode #save-local {
 body.dm-mode .level-slider { opacity: 0.5; }
 body.dm-mode input:not([type=file]):focus,
 body.dm-mode textarea:focus { outline: none; }
+body.dm-mode .dm-hide { display: none; }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -1090,7 +1091,7 @@ body.dm-mode textarea:focus { outline: none; }
   </section>
 
   <!-- COMBAT -->
-  <section class="section">
+  <section class="section dm-hide">
     <h2 class="section-title">The Engine</h2>
     <div class="two-col">
       <div class="card">
