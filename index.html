@@ -437,6 +437,133 @@ body::before {
 }
 .inspiring-btn[hidden] { display: none; }
 
+/* CONCENTRATION TRACKER */
+.concentration-tracker {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 2rem;
+  padding: 0.7rem 1.2rem;
+  border: 1px solid var(--gold-tarnish);
+  background: rgba(10, 6, 8, 0.5);
+}
+.concentration-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.concentration-tracker select {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gold-tarnish);
+  color: var(--parchment);
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  padding: 0.3rem 0.2rem;
+  outline: none;
+  cursor: pointer;
+}
+.concentration-tracker select:focus { border-bottom-color: var(--gold); }
+.concentration-tracker select option {
+  background: var(--ink-deep);
+  color: var(--parchment);
+}
+
+/* COMBAT RESOURCES */
+.combat-resources h3 { margin-bottom: 0.5rem; }
+.rest-buttons {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+  margin: 0.6rem 0 1.5rem;
+}
+.rest-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+}
+.rest-btn:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+.resource-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.4rem;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.25);
+}
+.resource-row:last-child { border-bottom: none; }
+.resource-row[hidden] { display: none; }
+.resource-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.resource-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  color: var(--parchment);
+}
+.resource-row input[type="number"] {
+  width: 44px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gold-tarnish);
+  color: var(--parchment);
+  font-family: inherit;
+  font-size: 1.1rem;
+  text-align: center;
+  outline: none;
+}
+.resource-row input[type="number"]:focus { border-bottom-color: var(--gold); }
+.resource-max { color: var(--gold-tarnish); font-size: 0.95rem; }
+.resource-pips {
+  display: flex;
+  gap: 0.4rem;
+}
+.resource-toggle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.3rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.resource-toggle:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+.resource-toggle.used {
+  border-color: var(--blood);
+  color: var(--blood-bright);
+  opacity: 0.55;
+}
+.resource-toggle.used:hover {
+  background: var(--blood);
+  color: var(--parchment);
+}
+
 /* TWO-COL */
 .two-col {
   display: grid;
@@ -981,7 +1108,11 @@ body.dm-mode textarea,
 body.dm-mode .pip,
 body.dm-mode .alt-control label,
 body.dm-mode .alt-control input,
-body.dm-mode .inv-remove {
+body.dm-mode .inv-remove,
+body.dm-mode .resource-toggle,
+body.dm-mode .resource-row input,
+body.dm-mode .rest-btn,
+body.dm-mode #concentration-select {
   pointer-events: none;
 }
 body.dm-mode .reset-btn,
@@ -1265,6 +1396,14 @@ body.dm-mode .dm-hide { display: none; }
   <!-- SPELLS & SLOTS -->
   <section class="section">
     <h2 class="section-title">Magic</h2>
+
+    <div class="concentration-tracker" id="concentration-wrap">
+      <span class="concentration-label">Concentrating on</span>
+      <select id="concentration-select">
+        <option value="">— not concentrating —</option>
+      </select>
+    </div>
+
     <div class="two-col">
       <div class="card">
         <h3>Spell Slots</h3>
@@ -1282,6 +1421,33 @@ body.dm-mode .dm-hide { display: none; }
         <p style="margin-top: 1rem;">Inspiration dice last 1 hour and add to one attack roll, ability check, or saving throw.</p>
         <p style="margin-top: 1rem;"><em>Instrument: lute.</em></p>
         <p style="margin-top: 1rem;"><strong>Dice to distribute:</strong> <span id="musician-dice">2</span></p>
+      </div>
+    </div>
+
+    <div class="card combat-resources" id="combat-resources-card" style="margin-top: 2rem;">
+      <h3>Combat Resources</h3>
+      <div class="rest-buttons">
+        <button class="rest-btn" id="short-rest-btn" title="Restores Pact slots; refreshes Hexblade's Curse and Magical Cunning">Short Rest</button>
+        <button class="rest-btn" id="long-rest-btn" title="Restores HP, all slots, Sorcery Points, Innate Sorcery, Magical Cunning, Heavenly Wings, clears Temp HP">Long Rest</button>
+      </div>
+      <div class="resource-row" id="resource-sp" hidden>
+        <span class="resource-label">Sorcery Points</span>
+        <div class="resource-value">
+          <input type="number" id="sorcery-points" value="0" min="0">
+          <span class="resource-max">/ <span id="sorcery-points-max">0</span></span>
+        </div>
+      </div>
+      <div class="resource-row" id="resource-innate" hidden>
+        <span class="resource-label">Innate Sorcery</span>
+        <div class="resource-pips" id="innate-pips"></div>
+      </div>
+      <div class="resource-row" id="resource-cunning" hidden>
+        <span class="resource-label">Magical Cunning</span>
+        <button class="resource-toggle" id="magical-cunning-toggle">Available</button>
+      </div>
+      <div class="resource-row" id="resource-wings" hidden>
+        <span class="resource-label">Heavenly Wings</span>
+        <button class="resource-toggle" id="heavenly-wings-toggle">Available</button>
       </div>
     </div>
 
@@ -1544,8 +1710,8 @@ const SPELLS = [
   { name: 'Sorcerous Burst', level: 'Cantrip', class: 'Sorcerer', gained: 8, notes: '1d8 force; chains an additional d8 on each max roll.' },
   { name: 'Message', level: 'Cantrip', class: 'Sorcerer', gained: 14, notes: 'Whispered telepathic message + reply, 120 ft.' },
   // 1st level
-  { name: 'Hex', level: '1st', class: 'Warlock', gained: 1, notes: 'Bonus action. 1d6 necrotic on hits. Moves to new target when current drops.' },
-  { name: 'Hideous Laughter', level: '1st', class: 'Warlock', gained: 1, notes: 'WIS save, target prone and incapacitated on fail.' },
+  { name: 'Hex', level: '1st', class: 'Warlock', gained: 1, concentration: true, notes: 'Bonus action. 1d6 necrotic on hits. Moves to new target when current drops.' },
+  { name: 'Hideous Laughter', level: '1st', class: 'Warlock', gained: 1, concentration: true, notes: 'WIS save, target prone and incapacitated on fail.' },
   { name: 'Find Familiar', level: '1st', class: 'Pact of the Chain', gained: 3, notes: 'Summons Vex, an imp.' },
   { name: 'Shield', level: '1st', class: 'Hexblade', gained: 1, notes: '+5 AC reaction, no damage from Magic Missile.' },
   { name: 'Magic Missile', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Three force darts, auto-hit, 1d4+1 each.' },
@@ -1554,17 +1720,17 @@ const SPELLS = [
   // 2nd level
   { name: 'Mirror Image', level: '2nd', class: 'Warlock', gained: 5, notes: 'Three duplicates, attackers may hit a duplicate instead.' },
   { name: 'Misty Step', level: '2nd', class: 'Sorcerer', gained: 7, notes: 'Bonus action teleport 30 ft.' },
-  { name: 'Suggestion', level: '2nd', class: 'Warlock', gained: 3, notes: 'WIS save, target follows reasonable command for up to 8 hours.' },
+  { name: 'Suggestion', level: '2nd', class: 'Warlock', gained: 3, concentration: true, notes: 'WIS save, target follows reasonable command for up to 8 hours.' },
   // 3rd level
   { name: 'Counterspell', level: '3rd', class: 'Sorcerer', gained: 9, notes: 'Reaction: shut down enemy spell up to 3rd level automatically.' },
   { name: 'Fireball', level: '3rd', class: 'Sorcerer', gained: 9, notes: '8d6 fire, 20 ft radius, DEX save half.' },
-  { name: 'Hypnotic Pattern', level: '3rd', class: 'Sorcerer', gained: 9, notes: 'WIS save, charm + incapacitate in 30 ft cube.' },
-  { name: 'Fly', level: '3rd', class: 'Sorcerer', gained: 9, notes: '60 ft fly speed, concentration, 10 min.' },
+  { name: 'Hypnotic Pattern', level: '3rd', class: 'Sorcerer', gained: 9, concentration: true, notes: 'WIS save, charm + incapacitate in 30 ft cube.' },
+  { name: 'Fly', level: '3rd', class: 'Sorcerer', gained: 9, concentration: true, notes: '60 ft fly speed, concentration, 10 min.' },
   // 4th
-  { name: 'Greater Invisibility', level: '4th', class: 'Sorcerer', gained: 11, notes: 'Invisible while concentrating. Advantage on attacks.' },
-  { name: 'Polymorph', level: '4th', class: 'Sorcerer', gained: 11, notes: 'Transform creature into a beast. 1 hour.' },
+  { name: 'Greater Invisibility', level: '4th', class: 'Sorcerer', gained: 11, concentration: true, notes: 'Invisible while concentrating. Advantage on attacks.' },
+  { name: 'Polymorph', level: '4th', class: 'Sorcerer', gained: 11, concentration: true, notes: 'Transform creature into a beast. 1 hour.' },
   // 5th
-  { name: 'Wall of Force', level: '5th', class: 'Sorcerer', gained: 13, notes: 'Invisible wall, blocks everything for 10 min.' },
+  { name: 'Wall of Force', level: '5th', class: 'Sorcerer', gained: 13, concentration: true, notes: 'Invisible wall, blocks everything for 10 min.' },
   { name: 'Synaptic Static', level: '5th', class: 'Sorcerer', gained: 13, notes: '8d6 psychic in 20 ft radius, INT save half + −1d6 to attacks/checks.' },
   // 6th
   { name: 'Disintegrate', level: '6th', class: 'Sorcerer', gained: 15, notes: '10d6+40 force damage, target turned to dust if killed.' },
@@ -1691,7 +1857,12 @@ const DEFAULT_STATE = {
   notes: '',
   inventory: JSON.parse(JSON.stringify(DEFAULT_INVENTORY)),
   alternates: {}, // featId -> optionId
-  usedSlots: { warlock: 0, sorc1: 0, sorc2: 0, sorc3: 0, sorc4: 0, sorc5: 0, sorc6: 0, sorc7: 0, sorc8: 0 }
+  usedSlots: { warlock: 0, sorc1: 0, sorc2: 0, sorc3: 0, sorc4: 0, sorc5: 0, sorc6: 0, sorc7: 0, sorc8: 0 },
+  sorceryPoints: 0,           // current; max = Sorcerer level (sorc 2+)
+  innateSorceryUsed: 0,       // 0 / 1 / 2 (max uses = 2 / long rest)
+  magicalCunningUsed: false,  // 1 / long rest
+  heavenlyWingsUsed: false,   // 1 / long rest (the transformation itself)
+  concentratingOn: null       // spell name string, or null
 };
 
 let state = loadState();
@@ -2059,6 +2230,75 @@ function render() {
   renderInventory();
   document.getElementById('coin').value = state.coin;
   document.getElementById('notes').value = state.notes;
+
+  // Combat resources + concentration dropdown
+  renderCombatResources(level);
+  renderConcentrationOptions(level);
+}
+
+function renderCombatResources(level) {
+  const sorcLevel = classBreakdown(level).s;
+
+  // Sorcery Points (sorc 2+)
+  const spRow = document.getElementById('resource-sp');
+  if (sorcLevel >= 2) {
+    spRow.hidden = false;
+    document.getElementById('sorcery-points').value = state.sorceryPoints || 0;
+    document.getElementById('sorcery-points-max').textContent = sorcLevel;
+  } else { spRow.hidden = true; }
+
+  // Innate Sorcery (sorc 1+ = char L5+)
+  const innateRow = document.getElementById('resource-innate');
+  if (sorcLevel >= 1) {
+    innateRow.hidden = false;
+    const pipsContainer = document.getElementById('innate-pips');
+    pipsContainer.innerHTML = '';
+    const used = state.innateSorceryUsed || 0;
+    for (let i = 0; i < 2; i++) {
+      const pip = document.createElement('div');
+      pip.className = 'pip' + (i < used ? '' : ' filled'); // .filled = unused (matches existing slot pip semantics)
+      pip.addEventListener('click', () => {
+        // Toggle: if this pip currently shows used (no .filled), un-use it; else mark this and earlier as used
+        const u = state.innateSorceryUsed || 0;
+        state.innateSorceryUsed = (i < u) ? i : i + 1;
+        saveState();
+        renderCombatResources(state.level);
+      });
+      pipsContainer.appendChild(pip);
+    }
+  } else { innateRow.hidden = true; }
+
+  // Magical Cunning (warlock 2 = char L2+)
+  const cunningRow = document.getElementById('resource-cunning');
+  if (level >= 2) {
+    cunningRow.hidden = false;
+    const btn = document.getElementById('magical-cunning-toggle');
+    btn.textContent = state.magicalCunningUsed ? 'Used' : 'Available';
+    btn.classList.toggle('used', !!state.magicalCunningUsed);
+  } else { cunningRow.hidden = true; }
+
+  // Heavenly Wings (Celestial Revelation L3+)
+  const wingsRow = document.getElementById('resource-wings');
+  if (level >= 3) {
+    wingsRow.hidden = false;
+    const btn = document.getElementById('heavenly-wings-toggle');
+    btn.textContent = state.heavenlyWingsUsed ? 'Used' : 'Available';
+    btn.classList.toggle('used', !!state.heavenlyWingsUsed);
+  } else { wingsRow.hidden = true; }
+}
+
+function renderConcentrationOptions(level) {
+  const sel = document.getElementById('concentration-select');
+  sel.innerHTML = '<option value="">— not concentrating —</option>';
+  for (const sp of SPELLS) {
+    if (!sp.concentration) continue;
+    if (sp.gained > level) continue;
+    const opt = document.createElement('option');
+    opt.value = sp.name;
+    opt.textContent = `${sp.name} (${sp.level})`;
+    if (state.concentratingOn === sp.name) opt.selected = true;
+    sel.appendChild(opt);
+  }
 }
 
 function renderSlots(level) {
@@ -2317,6 +2557,54 @@ document.getElementById('inspiring-btn').addEventListener('click', () => {
   state.tempHp = newTemp;
   document.getElementById('temp-hp').value = newTemp;
   saveState();
+});
+
+// Combat resources
+document.getElementById('sorcery-points').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value, 10);
+  state.sorceryPoints = isNaN(v) || v < 0 ? 0 : v;
+  saveState();
+});
+
+document.getElementById('magical-cunning-toggle').addEventListener('click', () => {
+  state.magicalCunningUsed = !state.magicalCunningUsed;
+  saveState();
+  renderCombatResources(state.level);
+});
+
+document.getElementById('heavenly-wings-toggle').addEventListener('click', () => {
+  state.heavenlyWingsUsed = !state.heavenlyWingsUsed;
+  saveState();
+  renderCombatResources(state.level);
+});
+
+document.getElementById('concentration-select').addEventListener('change', (e) => {
+  state.concentratingOn = e.target.value || null;
+  saveState();
+});
+
+// Rest buttons
+document.getElementById('short-rest-btn').addEventListener('click', () => {
+  // Pact Magic slots recover on a Short Rest
+  state.usedSlots.warlock = 0;
+  // Magical Cunning resets on Long Rest only — but the user might use it during the SR;
+  // we don't reset on SR. Hexblade's Curse recovers on SR or LR but isn't tracked as a
+  // usage flag in this build, so nothing to do for it.
+  saveState();
+  render();
+});
+
+document.getElementById('long-rest-btn').addEventListener('click', () => {
+  state.hpCurrent = null;     // back to max
+  state.tempHp = 0;           // IL grant only lasts 1h anyway
+  state.usedSlots = { warlock: 0, sorc1: 0, sorc2: 0, sorc3: 0, sorc4: 0, sorc5: 0, sorc6: 0, sorc7: 0, sorc8: 0 };
+  state.sorceryPoints = classBreakdown(state.level).s;
+  state.innateSorceryUsed = 0;
+  state.magicalCunningUsed = false;
+  state.heavenlyWingsUsed = false;
+  // concentratingOn left as-is — concentration isn't reset by rest, only by damage / new spell / death
+  saveState();
+  render();
 });
 
 document.getElementById('coin').addEventListener('input', (e) => {
