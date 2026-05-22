@@ -513,6 +513,11 @@ body::before {
   text-transform: uppercase;
   color: var(--gold);
 }
+.resource-label.has-tip {
+  cursor: help;
+  border-bottom: 1px dotted var(--gold-tarnish);
+}
+.resource-label.has-tip:hover { color: var(--gold-bright); border-bottom-color: var(--gold); }
 .resource-value {
   display: flex;
   align-items: baseline;
@@ -1584,8 +1589,8 @@ body.dm-mode .dm-hide { display: none; }
       </div>
       <div class="defense-cell">
         <div class="label">Speed</div>
-        <div class="value">30 ft</div>
-        <div class="sub">walking</div>
+        <div class="value" id="speed-val">30 ft</div>
+        <div class="sub" id="speed-sub">walking</div>
       </div>
     </div>
   </section>
@@ -1725,19 +1730,19 @@ body.dm-mode .dm-hide { display: none; }
         </div>
       </div>
       <div class="resource-row" id="resource-innate" hidden>
-        <span class="resource-label">Innate Sorcery</span>
+        <span class="resource-label has-tip" title="Bonus action: for 1 minute, +1 to your Sorcerer spell save DC and advantage on Sorcerer spell attack rolls. 2 uses per Long Rest.">Innate Sorcery</span>
         <div class="resource-pips" id="innate-pips"></div>
       </div>
       <div class="resource-row" id="resource-curse">
-        <span class="resource-label">Hexblade's Curse</span>
+        <span class="resource-label has-tip" title="Bonus action: curse a creature within 30 ft you can see for 1 minute. While cursed it takes +PB damage from your attacks, you score critical hits against it on 19–20, and if it drops you regain HP equal to warlock level + CHA mod. Once per Short or Long Rest.">Hexblade's Curse</span>
         <button class="resource-toggle" id="hexblade-curse-toggle">Available</button>
       </div>
       <div class="resource-row" id="resource-cunning" hidden>
-        <span class="resource-label">Magical Cunning</span>
+        <span class="resource-label has-tip" title="Esoteric rite for 1 minute. Regain expended Pact Magic spell slots up to half your maximum (round up). Once per Long Rest.">Magical Cunning</span>
         <button class="resource-toggle" id="magical-cunning-toggle">Available</button>
       </div>
       <div class="resource-row" id="resource-wings" hidden>
-        <span class="resource-label">Heavenly Wings</span>
+        <span class="resource-label has-tip" title="Bonus action: sprout two spectral wings for 1 minute. Gain a Fly Speed equal to your Speed. Shared Celestial Revelation rider: once per turn deal extra radiant damage equal to your Proficiency Bonus on a hit. Once per Long Rest.">Heavenly Wings</span>
         <button class="resource-toggle" id="heavenly-wings-toggle">Available</button>
       </div>
     </div>
@@ -2411,10 +2416,24 @@ function render() {
     }
   }
 
-  // Defense
-  document.getElementById('ac-val').textContent = 11 + mod(stats.dex); // leather + DEX
+  // Defense (apply exhaustion penalty to initiative — it's a d20 test)
+  const exhaustPen = getExhaustionPenalty();
+  document.getElementById('ac-val').textContent = 11 + mod(stats.dex); // leather + DEX (AC isn't a d20 test)
   document.getElementById('hp-max').textContent = hp;
-  document.getElementById('init-val').textContent = fmtMod(mod(stats.dex));
+  document.getElementById('init-val').textContent = fmtMod(mod(stats.dex) - exhaustPen);
+
+  // Speed (apply immobilizing conditions, plus Speedy feat if taken)
+  const condEffects = getConditionEffects();
+  const baseSpeed = getBaseSpeed(level);
+  const speedyTaken = baseSpeed > 30;
+  document.getElementById('speed-val').textContent = condEffects.speedZero ? '0 ft' : (baseSpeed + ' ft');
+  let speedSub;
+  if (condEffects.speedZero) {
+    speedSub = 'immobilized';
+  } else {
+    speedSub = speedyTaken ? 'walking · +10 Speedy' : 'walking';
+  }
+  document.getElementById('speed-sub').textContent = speedSub;
 
   // HP current
   if (state.hpCurrent === null) {
@@ -2435,7 +2454,7 @@ function render() {
   const chaMod = mod(stats.cha);
   const hasAgonizing = level >= 1;
   const ebDamage = hasAgonizing ? `1d10 + ${chaMod}` : '1d10';
-  document.getElementById('eb-tohit').textContent = fmtMod(pb + chaMod);
+  document.getElementById('eb-tohit').textContent = fmtMod(pb + chaMod - exhaustPen);
   document.getElementById('eb-damage').textContent = ebDamage;
   document.getElementById('eb-beams').textContent = beams;
   // Invocations note
@@ -2465,7 +2484,7 @@ function render() {
   savesGrid.innerHTML = '';
   for (const stat of ['str','dex','con','int','wis','cha']) {
     const proficient = hasSaveProf(stat, level);
-    const value = mod(stats[stat]) + (proficient ? pb : 0);
+    const value = mod(stats[stat]) + (proficient ? pb : 0) - exhaustPen;
     const labels = { str: 'Strength', dex: 'Dexterity', con: 'Constitution', int: 'Intelligence', wis: 'Wisdom', cha: 'Charisma' };
     const row = document.createElement('div');
     row.className = 'skill-row' + (proficient ? ' proficient' : '');
@@ -2482,7 +2501,7 @@ function render() {
   skillsGrid.innerHTML = '';
   for (const skill of SKILL_LIST) {
     const proficient = skill.prof;
-    const value = mod(stats[skill.ability]) + (proficient ? pb : 0);
+    const value = mod(stats[skill.ability]) + (proficient ? pb : 0) - exhaustPen;
     const row = document.createElement('div');
     row.className = 'skill-row' + (proficient ? ' proficient' : '');
     row.innerHTML = `<span class="skill-name">${skill.name} (${skill.ability.toUpperCase()})</span><span class="skill-value">${fmtMod(value)}</span>`;
@@ -2492,8 +2511,8 @@ function render() {
   document.getElementById('prof-bonus').textContent = fmtMod(pb);
 
   // Spell DC / Attack
-  document.getElementById('spell-dc').textContent = 8 + chaMod + pb;
-  document.getElementById('spell-atk').textContent = fmtMod(chaMod + pb);
+  document.getElementById('spell-dc').textContent = 8 + chaMod + pb;       // DC isn't a d20 test you roll
+  document.getElementById('spell-atk').textContent = fmtMod(chaMod + pb - exhaustPen);
 
   // Musician dice = PB
   document.getElementById('musician-dice').textContent = pb;
@@ -2664,6 +2683,32 @@ function renderFontOfMagic(level) {
 
 function sorcLevelForBuild() { return classBreakdown(state.level).s; }
 
+// 2024 PHB: each level of Exhaustion is −2 on every d20 Test you make.
+const EXHAUSTION_PENALTY_PER_LEVEL = 2;
+function getExhaustionPenalty() {
+  return (state.exhaustion || 0) * EXHAUSTION_PENALTY_PER_LEVEL;
+}
+
+// Conditions that reduce speed to 0 per 2024 PHB (Grappled, Paralyzed, Petrified, Prone,
+// Restrained, Stunned, Unconscious all set speed to 0 or prevent movement).
+function getConditionEffects() {
+  const c = state.conditions || {};
+  const speedZero = !!(c.grappled || c.paralyzed || c.petrified || c.prone || c.restrained || c.stunned || c.unconscious);
+  const incapacitated = !!(c.incapacitated || c.paralyzed || c.petrified || c.stunned || c.unconscious);
+  return { speedZero, incapacitated };
+}
+
+function getBaseSpeed(level) {
+  let speed = 30;
+  for (let l = 1; l <= level; l++) {
+    const ld = LEVEL_DATA[l];
+    if (!ld || !ld.feat) continue;
+    const chosen = state.alternates[ld.feat.id] || ld.feat.default;
+    if (chosen === 'speedy') speed += 10;
+  }
+  return speed;
+}
+
 function renderDeathSaves(maxHp) {
   const block = document.getElementById('death-saves');
   const currentHp = state.hpCurrent === null ? maxHp : Math.min(state.hpCurrent, maxHp);
@@ -2703,7 +2748,7 @@ function renderConditions() {
     pill.addEventListener('click', () => {
       state.conditions[key] = !state.conditions[key];
       saveState();
-      renderConditions();
+      render(); // condition flips can change Speed and other displayed stats
     });
     container.appendChild(pill);
   }
@@ -3129,6 +3174,7 @@ document.getElementById('exhaustion-level').addEventListener('input', (e) => {
   const v = parseInt(e.target.value, 10);
   state.exhaustion = isNaN(v) || v < 0 ? 0 : Math.min(6, v);
   saveState();
+  render(); // exhaustion penalty changes Initiative, attacks, saves, skills
 });
 
 document.getElementById('concentration-select').addEventListener('change', (e) => {
