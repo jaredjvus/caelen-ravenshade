@@ -723,6 +723,18 @@ body::before {
   cursor: not-allowed;
   opacity: 0.45;
 }
+.spell-table button.cast-btn.level-tag.no-slots {
+  border-color: var(--blood);
+  color: var(--blood-bright);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.spell-table button.cast-btn.level-tag.no-slots:hover {
+  background: var(--blood);
+  color: var(--parchment);
+  border-color: var(--blood);
+  text-decoration: line-through;
+}
 
 /* CAST POPOVER */
 .cast-popover {
@@ -2439,7 +2451,7 @@ function togglePip(slotKey, index, max) {
     state.usedSlots[slotKey] = index;
   }
   saveState();
-  renderSlots(state.level);
+  render();
 }
 
 const SPELL_LEVEL_ORDER = { 'Cantrip': 0, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4, '5th': 5, '6th': 6, '7th': 7, '8th': 8, '9th': 9 };
@@ -2458,9 +2470,16 @@ function renderSpells(level) {
     if (spell.gained <= level) {
       const tr = document.createElement('tr');
       const isCantrip = SPELL_LEVEL_ORDER[spell.level] === 0;
-      const levelCell = isCantrip
-        ? `<span class="level-tag">${spell.level}</span>`
-        : `<button class="level-tag cast-btn" data-spell="${spell.name}" title="Click to cast">${spell.level}</button>`;
+      let levelCell;
+      if (isCantrip) {
+        levelCell = `<span class="level-tag">${spell.level}</span>`;
+      } else {
+        const tiers = getValidSlotTiers(spell, level);
+        const anyAvailable = tiers.some(t => (t.max - t.used) > 0);
+        const classes = 'level-tag cast-btn' + (anyAvailable ? '' : ' no-slots');
+        const titleAttr = anyAvailable ? 'Click to cast' : 'No slots available at or above this spell\'s level';
+        levelCell = `<button class="${classes}" data-spell="${spell.name}" title="${titleAttr}">${spell.level}</button>`;
+      }
       tr.innerHTML = `<td>${levelCell}</td><td class="spell-name">${spell.name}</td><td class="spell-source">${spell.notes}</td>`;
       const btn = tr.querySelector('.cast-btn');
       if (btn) {
