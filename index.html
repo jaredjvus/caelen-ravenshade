@@ -708,6 +708,77 @@ body::before {
   color: var(--gold);
   text-transform: uppercase;
   white-space: nowrap;
+  background: transparent;
+}
+.spell-table button.cast-btn.level-tag {
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.spell-table button.cast-btn.level-tag:hover {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+}
+.spell-table button.cast-btn.level-tag:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* CAST POPOVER */
+.cast-popover {
+  position: fixed;
+  z-index: 2000;
+  min-width: 200px;
+  max-width: 280px;
+  padding: 0.6rem;
+  background: var(--ink-deep);
+  border: 1px solid var(--gold);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+  font-family: 'EB Garamond', serif;
+  color: var(--parchment);
+}
+.cast-popover[hidden] { display: none; }
+.cast-popover-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dotted var(--gold-tarnish);
+}
+.cast-popover-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: 0.15rem 0;
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--parchment);
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.cast-popover-option:hover {
+  background: rgba(184, 137, 58, 0.15);
+  border-color: var(--gold);
+}
+.cast-popover-option .tier-count {
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+}
+.cast-popover-empty {
+  text-align: center;
+  font-style: italic;
+  color: var(--blood-bright);
+  padding: 0.5rem;
 }
 
 .preview-tag {
@@ -1112,7 +1183,8 @@ body.dm-mode .inv-remove,
 body.dm-mode .resource-toggle,
 body.dm-mode .resource-row input,
 body.dm-mode .rest-btn,
-body.dm-mode #concentration-select {
+body.dm-mode #concentration-select,
+body.dm-mode .cast-btn {
   pointer-events: none;
 }
 body.dm-mode .reset-btn,
@@ -1606,6 +1678,8 @@ body.dm-mode .dm-hide { display: none; }
   <div class="save-line local" id="save-local">Saved locally</div>
   <div class="save-line" id="save-cloud">Cloud</div>
 </div>
+
+<div class="cast-popover" id="cast-popover" hidden></div>
 
 <script>
 // ============================================================
@@ -2368,13 +2442,13 @@ function togglePip(slotKey, index, max) {
   renderSlots(state.level);
 }
 
+const SPELL_LEVEL_ORDER = { 'Cantrip': 0, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4, '5th': 5, '6th': 6, '7th': 7, '8th': 8, '9th': 9 };
+
 function renderSpells(level) {
   const tbody = document.getElementById('spells-tbody');
   tbody.innerHTML = '';
-  // Sort: by level (cantrip first), then alphabetical
-  const levelOrder = { 'Cantrip': 0, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4, '5th': 5, '6th': 6, '7th': 7, '8th': 8, '9th': 9 };
   const sorted = [...SPELLS].sort((a, b) => {
-    const al = levelOrder[a.level], bl = levelOrder[b.level];
+    const al = SPELL_LEVEL_ORDER[a.level], bl = SPELL_LEVEL_ORDER[b.level];
     if (al !== bl) return al - bl;
     return a.name.localeCompare(b.name);
   });
@@ -2382,12 +2456,21 @@ function renderSpells(level) {
   const nextLevel = level + 1;
   for (const spell of sorted) {
     if (spell.gained <= level) {
-      // Known
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><span class="level-tag">${spell.level}</span></td><td class="spell-name">${spell.name}</td><td class="spell-source">${spell.notes}</td>`;
+      const isCantrip = SPELL_LEVEL_ORDER[spell.level] === 0;
+      const levelCell = isCantrip
+        ? `<span class="level-tag">${spell.level}</span>`
+        : `<button class="level-tag cast-btn" data-spell="${spell.name}" title="Click to cast">${spell.level}</button>`;
+      tr.innerHTML = `<td>${levelCell}</td><td class="spell-name">${spell.name}</td><td class="spell-source">${spell.notes}</td>`;
+      const btn = tr.querySelector('.cast-btn');
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openCastPopover(spell, btn);
+        });
+      }
       tbody.appendChild(tr);
     } else if (spell.gained === nextLevel) {
-      // Preview
       const tr = document.createElement('tr');
       tr.className = 'preview';
       tr.innerHTML = `<td><span class="level-tag">${spell.level}</span></td><td class="spell-name">${spell.name}<span class="preview-tag">Next Level</span></td><td class="spell-source">${spell.notes}</td>`;
@@ -2395,6 +2478,105 @@ function renderSpells(level) {
     }
   }
 }
+
+// ============================================================
+// CAST POPOVER
+// ============================================================
+
+function getValidSlotTiers(spell, level) {
+  const minLevel = SPELL_LEVEL_ORDER[spell.level];
+  if (!minLevel) return []; // cantrip
+  const { w, s } = classBreakdown(level);
+  const tiers = [];
+  const pact = pactSlots(w);
+  if (pact && pact.level >= minLevel) {
+    tiers.push({
+      key: 'warlock',
+      label: `Pact (${ordinal(pact.level)})`,
+      max: pact.count,
+      used: state.usedSlots.warlock || 0
+    });
+  }
+  const sorcSlots = SORC_SLOTS[s] || [];
+  for (let i = 0; i < sorcSlots.length; i++) {
+    const lvl = i + 1;
+    if (lvl < minLevel) continue;
+    const key = `sorc${lvl}`;
+    tiers.push({
+      key,
+      label: `Sorcerer ${ordinal(lvl)}`,
+      max: sorcSlots[i],
+      used: state.usedSlots[key] || 0
+    });
+  }
+  return tiers;
+}
+
+function openCastPopover(spell, anchor) {
+  if (IS_DM) return;
+  const pop = document.getElementById('cast-popover');
+  pop.innerHTML = '';
+
+  const title = document.createElement('div');
+  title.className = 'cast-popover-title';
+  title.textContent = `Cast ${spell.name} with`;
+  pop.appendChild(title);
+
+  const tiers = getValidSlotTiers(spell, state.level);
+  const usable = tiers.filter(t => (t.max - t.used) > 0);
+
+  if (usable.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'cast-popover-empty';
+    empty.textContent = 'No slots available';
+    pop.appendChild(empty);
+  } else {
+    for (const t of usable) {
+      const remaining = t.max - t.used;
+      const opt = document.createElement('button');
+      opt.className = 'cast-popover-option';
+      opt.innerHTML = `<span>${t.label}</span><span class="tier-count">×${remaining}</span>`;
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.usedSlots[t.key] = (state.usedSlots[t.key] || 0) + 1;
+        saveState();
+        closeCastPopover();
+        render();
+      });
+      pop.appendChild(opt);
+    }
+  }
+
+  // Position near anchor (with right-edge clamping)
+  pop.hidden = false;
+  const rect = anchor.getBoundingClientRect();
+  const popWidth = pop.offsetWidth;
+  let leftPx = rect.left;
+  if (leftPx + popWidth > window.innerWidth - 12) {
+    leftPx = Math.max(12, window.innerWidth - popWidth - 12);
+  }
+  pop.style.left = leftPx + 'px';
+  pop.style.top = (rect.bottom + 6) + 'px';
+
+  // Close on next outside click (defer so this click doesn't immediately close it)
+  setTimeout(() => document.addEventListener('click', closeOnOutsideClick), 0);
+}
+
+function closeCastPopover() {
+  const pop = document.getElementById('cast-popover');
+  pop.hidden = true;
+  document.removeEventListener('click', closeOnOutsideClick);
+}
+
+function closeOnOutsideClick(e) {
+  const pop = document.getElementById('cast-popover');
+  if (pop.contains(e.target)) return;
+  closeCastPopover();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeCastPopover();
+});
 
 function renderClassFeatures(level) {
   const container = document.getElementById('class-features');
