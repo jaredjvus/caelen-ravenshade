@@ -241,6 +241,45 @@ body::before {
   color: var(--ink);
 }
 
+.options-menu {
+  position: relative;
+  margin-left: auto;
+}
+.options-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s, border-color 0.3s;
+  line-height: 1;
+}
+.options-btn:hover {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+}
+.options-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  background: var(--ink-deep);
+  border: 1px solid var(--gold);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.7);
+  z-index: 300;
+  min-width: 160px;
+}
+.options-dropdown[hidden] { display: none; }
+.options-dropdown .io-btn,
+.options-dropdown .reset-btn { width: 100%; }
+
 /* SECTION */
 .section {
   margin-bottom: 4rem;
@@ -1400,6 +1439,7 @@ body.dm-mode .exhaustion-control input {
 }
 body.dm-mode .reset-btn,
 body.dm-mode .io-btn,
+body.dm-mode .options-menu,
 body.dm-mode .header-action[data-add],
 body.dm-mode .inv-remove,
 body.dm-mode #save-local {
@@ -1516,11 +1556,15 @@ body.dm-mode .dm-hide { display: none; }
         <input type="range" min="1" max="20" value="1" class="level-slider" id="level-slider">
         <div class="level-display" id="level-display">1</div>
       </div>
-      <span class="level-classes" id="level-classes-text">Hexblade Warlock 1</span>
-      <button class="io-btn" id="export-btn" title="Download a JSON backup of this sheet">Export</button>
-      <button class="io-btn" id="import-btn" title="Restore a sheet from a JSON backup">Import</button>
-      <input type="file" id="import-file" accept="application/json,.json" style="display:none">
-      <button class="reset-btn" id="reset-btn">Reset Sheet</button>
+      <div class="options-menu">
+        <button class="options-btn" id="options-toggle" title="Options" aria-label="Open options menu">⋯</button>
+        <div class="options-dropdown" id="options-dropdown" hidden>
+          <button class="io-btn" id="export-btn" title="Download a JSON backup of this sheet">Export</button>
+          <button class="io-btn" id="import-btn" title="Restore a sheet from a JSON backup">Import</button>
+          <input type="file" id="import-file" accept="application/json,.json" style="display:none">
+          <button class="reset-btn" id="reset-btn">Reset Sheet</button>
+        </div>
+      </div>
     </div>
     <div class="loaded-from" id="loaded-from"></div>
   </div>
@@ -2421,7 +2465,6 @@ function render() {
 
   // Title bar
   document.getElementById('title-classes').textContent = classString(level);
-  document.getElementById('level-classes-text').textContent = classString(level);
   document.getElementById('level-display').textContent = level;
 
   // Stats
@@ -3277,6 +3320,26 @@ document.querySelectorAll('[data-add]').forEach(btn => {
     if (lastInput) lastInput.focus();
   });
 });
+
+// Options dropdown (Export / Import / Reset)
+document.getElementById('options-toggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const dd = document.getElementById('options-dropdown');
+  dd.hidden = !dd.hidden;
+  if (!dd.hidden) {
+    setTimeout(() => document.addEventListener('click', closeOptionsOnOutside), 0);
+  } else {
+    document.removeEventListener('click', closeOptionsOnOutside);
+  }
+});
+
+function closeOptionsOnOutside(e) {
+  const dd = document.getElementById('options-dropdown');
+  const toggle = document.getElementById('options-toggle');
+  if (dd.contains(e.target) || e.target === toggle) return;
+  dd.hidden = true;
+  document.removeEventListener('click', closeOptionsOnOutside);
+}
 
 document.getElementById('export-btn').addEventListener('click', () => {
   const payload = { ...state, _exportedAt: new Date().toISOString(), _app: STORAGE_KEY };
