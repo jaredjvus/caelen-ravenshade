@@ -877,6 +877,22 @@ body::before {
   background: rgba(150, 32, 37, 0.04);
 }
 
+.spell-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gold-tarnish);
+  color: var(--parchment);
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  padding: 0.5rem 0.3rem;
+  margin: 0.5rem 0 1.2rem;
+  outline: none;
+}
+.spell-search-input:focus { border-bottom-color: var(--gold); }
+.spell-search-input::placeholder { color: var(--parchment-dim); font-style: italic; }
+
 .spell-table .level-tag {
   display: inline-block;
   font-family: 'Cinzel', serif;
@@ -1712,6 +1728,10 @@ body.dm-mode .dm-hide { display: none; }
         <button class="rest-btn" id="short-rest-btn" title="Restores Pact slots; refreshes Hexblade's Curse and Magical Cunning">Short Rest</button>
         <button class="rest-btn" id="long-rest-btn" title="Restores HP, all slots, Sorcery Points, Innate Sorcery, Magical Cunning, Heavenly Wings, clears Temp HP">Long Rest</button>
       </div>
+      <div class="resource-row" id="resource-inspiration">
+        <span class="resource-label has-tip" title="Spend Heroic Inspiration to gain advantage on one d20 roll (or reroll a d20 once and use either result). You can only have one Inspiration at a time. Awarded by the DM, some races (Human Resourceful), feats, and class features.">Heroic Inspiration</span>
+        <button class="resource-toggle" id="inspiration-toggle">None</button>
+      </div>
       <div class="resource-row" id="resource-sp" hidden>
         <span class="resource-label">Sorcery Points</span>
         <div class="resource-value">
@@ -1749,6 +1769,7 @@ body.dm-mode .dm-hide { display: none; }
 
     <div class="card" style="margin-top: 2rem;">
       <h3>Known Spells <span class="header-action">Updated automatically with level</span></h3>
+      <input type="search" id="spell-search" class="spell-search-input" placeholder="Filter spells by name…" autocomplete="off">
       <table class="spell-table">
         <thead>
           <tr><th style="width: 100px;">Level</th><th>Spell</th><th>Notes</th></tr>
@@ -2165,7 +2186,8 @@ const DEFAULT_STATE = {
   deathSavesSuccess: 0,       // 0-3
   deathSavesFail: 0,          // 0-3
   conditions: {},             // { blinded: true, frightened: true, ... }
-  exhaustion: 0               // 0-6 (2024 exhaustion levels)
+  exhaustion: 0,              // 0-6 (2024 exhaustion levels)
+  heroicInspiration: false    // 2024 PHB universal mechanic; advantage on one d20 roll
 };
 
 let state = loadState();
@@ -2610,6 +2632,12 @@ function renderCombatResources(level) {
   const curseBtn = document.getElementById('hexblade-curse-toggle');
   curseBtn.textContent = state.hexbladesCurseUsed ? 'Used' : 'Available';
   curseBtn.classList.toggle('used', !!state.hexbladesCurseUsed);
+
+  // Heroic Inspiration (universal 2024 mechanic). Inverted semantics: "Available" = gold (good),
+  // "None" = .used class to muted-red so absence is visually obvious.
+  const inspBtn = document.getElementById('inspiration-toggle');
+  inspBtn.textContent = state.heroicInspiration ? 'Available' : 'None';
+  inspBtn.classList.toggle('used', !state.heroicInspiration);
 
   // Font of Magic conversion (sorc 2+)
   renderFontOfMagic(level);
@@ -3170,11 +3198,28 @@ document.getElementById('hexblade-curse-toggle').addEventListener('click', () =>
   renderCombatResources(state.level);
 });
 
+document.getElementById('inspiration-toggle').addEventListener('click', () => {
+  state.heroicInspiration = !state.heroicInspiration;
+  saveState();
+  renderCombatResources(state.level);
+});
+
 document.getElementById('exhaustion-level').addEventListener('input', (e) => {
   const v = parseInt(e.target.value, 10);
   state.exhaustion = isNaN(v) || v < 0 ? 0 : Math.min(6, v);
   saveState();
   render(); // exhaustion penalty changes Initiative, attacks, saves, skills
+});
+
+// Spell search: filter visible rows by name. Transient, not persisted to state.
+document.getElementById('spell-search').addEventListener('input', (e) => {
+  const q = e.target.value.toLowerCase().trim();
+  const tbody = document.getElementById('spells-tbody');
+  for (const tr of tbody.children) {
+    const nameCell = tr.querySelector('.spell-name');
+    const name = nameCell ? nameCell.textContent.toLowerCase() : '';
+    tr.style.display = (q === '' || name.includes(q)) ? '' : 'none';
+  }
 });
 
 document.getElementById('concentration-select').addEventListener('change', (e) => {
