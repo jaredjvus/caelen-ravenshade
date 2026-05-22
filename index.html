@@ -564,6 +564,180 @@ body::before {
   color: var(--parchment);
 }
 
+/* FONT OF MAGIC (Sorcery Point ↔ Slot conversion) */
+.font-of-magic[hidden] { display: none; }
+.font-of-magic {
+  margin: 0.4rem 0 0.6rem;
+  padding: 0.6rem 0.4rem;
+  border-top: 1px dotted rgba(184, 137, 58, 0.25);
+}
+.fom-section {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.25rem 0;
+}
+.fom-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-tarnish);
+  min-width: 78px;
+}
+.fom-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.fom-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.63rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  padding: 0.25rem 0.55rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.fom-btn:hover {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+}
+.fom-empty {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--parchment-dim);
+  font-size: 0.82rem;
+}
+
+/* DEATH SAVES (shown only when HP = 0) */
+.death-saves[hidden] { display: none; }
+.death-saves {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px dotted var(--gold-tarnish);
+}
+.ds-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--blood-bright);
+  margin-bottom: 0.4rem;
+}
+.ds-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.2rem 0;
+}
+.ds-sub {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--parchment-aged);
+  min-width: 56px;
+  text-align: right;
+}
+.ds-pips {
+  display: flex;
+  gap: 0.32rem;
+}
+.ds-pip {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.2s;
+}
+.ds-pip.fail { border-color: var(--blood); }
+.ds-pip.checked.success {
+  background: var(--gold);
+  box-shadow: 0 0 4px rgba(184, 137, 58, 0.6);
+}
+.ds-pip.checked.fail {
+  background: var(--blood-bright);
+  box-shadow: 0 0 4px rgba(150, 32, 37, 0.6);
+}
+.ds-pip:hover { transform: scale(1.15); }
+
+/* CONDITIONS */
+.conditions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--gold-tarnish);
+  background: rgba(10, 6, 8, 0.4);
+}
+.conditions-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.conditions-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 200px;
+}
+.condition-pill {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.82rem;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--parchment-dim);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.condition-pill:hover {
+  border-color: var(--gold);
+  color: var(--parchment);
+}
+.condition-pill.active {
+  background: var(--blood);
+  border-color: var(--blood-bright);
+  color: var(--parchment);
+}
+.exhaustion-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.exhaustion-control input {
+  width: 32px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--gold-tarnish);
+  color: var(--parchment);
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  outline: none;
+}
+.exhaustion-control input:focus { border-bottom-color: var(--gold); }
+.exhaustion-of { color: var(--gold-tarnish); font-size: 0.8rem; }
+
 /* TWO-COL */
 .two-col {
   display: grid;
@@ -1196,7 +1370,11 @@ body.dm-mode .resource-toggle,
 body.dm-mode .resource-row input,
 body.dm-mode .rest-btn,
 body.dm-mode #concentration-select,
-body.dm-mode .cast-btn {
+body.dm-mode .cast-btn,
+body.dm-mode .fom-btn,
+body.dm-mode .ds-pip,
+body.dm-mode .condition-pill,
+body.dm-mode .exhaustion-control input {
   pointer-events: none;
 }
 body.dm-mode .reset-btn,
@@ -1365,6 +1543,16 @@ body.dm-mode .dm-hide { display: none; }
       Ability score bonuses from Entertainer background: +2 CHA, +1 CON. Starting array: STR 8 · DEX 14 · CON 15 · INT 10 · WIS 10 · CHA 17.
     </p>
 
+    <div class="conditions-row">
+      <div class="conditions-label">Conditions</div>
+      <div class="conditions-pills" id="conditions-pills"></div>
+      <div class="exhaustion-control">
+        <span>Exhaustion</span>
+        <input type="number" id="exhaustion-level" value="0" min="0" max="6">
+        <span class="exhaustion-of">/ 6</span>
+      </div>
+    </div>
+
     <div class="defense-row">
       <div class="defense-cell">
         <div class="label">Armor Class</div>
@@ -1383,6 +1571,11 @@ body.dm-mode .dm-hide { display: none; }
           + <input type="number" id="temp-hp" value="0" min="0"> <span class="temp-hp-label">temp</span>
         </div>
         <button class="inspiring-btn" id="inspiring-btn" hidden title="Inspiring Leader: temp HP = character level + CHA mod (doesn't stack — only replaces if higher)">↻ Inspiring Leader</button>
+        <div class="death-saves" id="death-saves" hidden>
+          <div class="ds-title">Death Saves</div>
+          <div class="ds-row"><span class="ds-sub">Success</span><div class="ds-pips" id="ds-success"></div></div>
+          <div class="ds-row"><span class="ds-sub">Fail</span><div class="ds-pips" id="ds-fail"></div></div>
+        </div>
       </div>
       <div class="defense-cell">
         <div class="label">Initiative</div>
@@ -1521,9 +1714,23 @@ body.dm-mode .dm-hide { display: none; }
           <span class="resource-max">/ <span id="sorcery-points-max">0</span></span>
         </div>
       </div>
+      <div class="font-of-magic" id="font-of-magic-ui" hidden>
+        <div class="fom-section">
+          <div class="fom-label">Slot → SP</div>
+          <div class="fom-buttons" id="slot-to-sp-buttons"></div>
+        </div>
+        <div class="fom-section">
+          <div class="fom-label">SP → Slot</div>
+          <div class="fom-buttons" id="sp-to-slot-buttons"></div>
+        </div>
+      </div>
       <div class="resource-row" id="resource-innate" hidden>
         <span class="resource-label">Innate Sorcery</span>
         <div class="resource-pips" id="innate-pips"></div>
+      </div>
+      <div class="resource-row" id="resource-curse">
+        <span class="resource-label">Hexblade's Curse</span>
+        <button class="resource-toggle" id="hexblade-curse-toggle">Available</button>
       </div>
       <div class="resource-row" id="resource-cunning" hidden>
         <span class="resource-label">Magical Cunning</span>
@@ -1948,7 +2155,12 @@ const DEFAULT_STATE = {
   innateSorceryUsed: 0,       // 0 / 1 / 2 (max uses = 2 / long rest)
   magicalCunningUsed: false,  // 1 / long rest
   heavenlyWingsUsed: false,   // 1 / long rest (the transformation itself)
-  concentratingOn: null       // spell name string, or null
+  hexbladesCurseUsed: false,  // 1 / short or long rest
+  concentratingOn: null,      // spell name string, or null
+  deathSavesSuccess: 0,       // 0-3
+  deathSavesFail: 0,          // 0-3
+  conditions: {},             // { blinded: true, frightened: true, ... }
+  exhaustion: 0               // 0-6 (2024 exhaustion levels)
 };
 
 let state = loadState();
@@ -2317,9 +2529,11 @@ function render() {
   document.getElementById('coin').value = state.coin;
   document.getElementById('notes').value = state.notes;
 
-  // Combat resources + concentration dropdown
+  // Combat resources + concentration dropdown + death saves + conditions
   renderCombatResources(level);
   renderConcentrationOptions(level);
+  renderDeathSaves(hp);
+  renderConditions();
 }
 
 function renderCombatResources(level) {
@@ -2372,6 +2586,128 @@ function renderCombatResources(level) {
     btn.textContent = state.heavenlyWingsUsed ? 'Used' : 'Available';
     btn.classList.toggle('used', !!state.heavenlyWingsUsed);
   } else { wingsRow.hidden = true; }
+
+  // Hexblade's Curse (legacy XGE Hexblade subclass at warlock 1 — always available for this build)
+  const curseBtn = document.getElementById('hexblade-curse-toggle');
+  curseBtn.textContent = state.hexbladesCurseUsed ? 'Used' : 'Available';
+  curseBtn.classList.toggle('used', !!state.hexbladesCurseUsed);
+
+  // Font of Magic conversion (sorc 2+)
+  renderFontOfMagic(level);
+}
+
+const SLOT_COSTS = [
+  { lvl: 1, cost: 2, minSorc: 2 },
+  { lvl: 2, cost: 3, minSorc: 3 },
+  { lvl: 3, cost: 5, minSorc: 5 },
+  { lvl: 4, cost: 6, minSorc: 7 },
+  { lvl: 5, cost: 7, minSorc: 9 }
+];
+
+function renderFontOfMagic(level) {
+  const ui = document.getElementById('font-of-magic-ui');
+  const { s } = classBreakdown(level);
+  if (s < 2) { ui.hidden = true; return; }
+  ui.hidden = false;
+
+  // Slot → SP
+  const slotToSp = document.getElementById('slot-to-sp-buttons');
+  slotToSp.innerHTML = '';
+  const sorcSlots = SORC_SLOTS[s] || [];
+  for (let i = 0; i < sorcSlots.length; i++) {
+    const lvl = i + 1;
+    const key = `sorc${lvl}`;
+    const remaining = sorcSlots[i] - (state.usedSlots[key] || 0);
+    if (remaining <= 0) continue;
+    const btn = document.createElement('button');
+    btn.className = 'fom-btn';
+    btn.textContent = `${ordinal(lvl)} → +${lvl} sp`;
+    btn.title = `Burn one ${ordinal(lvl)}-level Sorcerer slot for ${lvl} Sorcery Points`;
+    btn.addEventListener('click', () => {
+      state.usedSlots[key] = (state.usedSlots[key] || 0) + 1;
+      const max = sorcLevelForBuild();
+      state.sorceryPoints = Math.min(max, (state.sorceryPoints || 0) + lvl);
+      saveState();
+      render();
+    });
+    slotToSp.appendChild(btn);
+  }
+  if (slotToSp.children.length === 0) {
+    slotToSp.innerHTML = '<span class="fom-empty">no slots left</span>';
+  }
+
+  // SP → Slot
+  const spToSlot = document.getElementById('sp-to-slot-buttons');
+  spToSlot.innerHTML = '';
+  const sp = state.sorceryPoints || 0;
+  for (const c of SLOT_COSTS) {
+    if (s < c.minSorc) continue;
+    const key = `sorc${c.lvl}`;
+    const used = state.usedSlots[key] || 0;
+    if (sp < c.cost || used <= 0) continue;
+    const btn = document.createElement('button');
+    btn.className = 'fom-btn';
+    btn.textContent = `${c.cost} sp → ${ordinal(c.lvl)}`;
+    btn.title = `Spend ${c.cost} Sorcery Points to restore one ${ordinal(c.lvl)}-level slot`;
+    btn.addEventListener('click', () => {
+      state.sorceryPoints -= c.cost;
+      state.usedSlots[key] = Math.max(0, (state.usedSlots[key] || 0) - 1);
+      saveState();
+      render();
+    });
+    spToSlot.appendChild(btn);
+  }
+  if (spToSlot.children.length === 0) {
+    spToSlot.innerHTML = '<span class="fom-empty">' + (sp < 2 ? 'not enough SP' : 'nothing to restore') + '</span>';
+  }
+}
+
+function sorcLevelForBuild() { return classBreakdown(state.level).s; }
+
+function renderDeathSaves(maxHp) {
+  const block = document.getElementById('death-saves');
+  const currentHp = state.hpCurrent === null ? maxHp : Math.min(state.hpCurrent, maxHp);
+  if (currentHp > 0) {
+    block.hidden = true;
+    return;
+  }
+  block.hidden = false;
+  ['success', 'fail'].forEach(kind => {
+    const container = document.getElementById('ds-' + kind);
+    container.innerHTML = '';
+    const stateKey = kind === 'success' ? 'deathSavesSuccess' : 'deathSavesFail';
+    const current = state[stateKey] || 0;
+    for (let i = 0; i < 3; i++) {
+      const pip = document.createElement('div');
+      pip.className = 'ds-pip ' + kind + (i < current ? ' checked' : '');
+      pip.addEventListener('click', () => {
+        state[stateKey] = (i < current) ? i : i + 1;
+        saveState();
+        render();
+      });
+      container.appendChild(pip);
+    }
+  });
+}
+
+const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious'];
+
+function renderConditions() {
+  const container = document.getElementById('conditions-pills');
+  container.innerHTML = '';
+  for (const name of CONDITIONS) {
+    const key = name.toLowerCase();
+    const pill = document.createElement('button');
+    pill.className = 'condition-pill' + (state.conditions[key] ? ' active' : '');
+    pill.textContent = name;
+    pill.addEventListener('click', () => {
+      state.conditions[key] = !state.conditions[key];
+      saveState();
+      renderConditions();
+    });
+    container.appendChild(pill);
+  }
+  document.getElementById('exhaustion-level').value = state.exhaustion || 0;
 }
 
 function renderConcentrationOptions(level) {
@@ -2736,7 +3072,15 @@ document.getElementById('level-slider').addEventListener('input', (e) => {
 document.getElementById('hp-current').addEventListener('input', (e) => {
   const v = parseInt(e.target.value, 10);
   state.hpCurrent = isNaN(v) ? null : v;
+  // Auto-reset death saves when HP becomes > 0 (stabilized / healed)
+  if (state.hpCurrent === null || state.hpCurrent > 0) {
+    state.deathSavesSuccess = 0;
+    state.deathSavesFail = 0;
+  }
   saveState();
+  // Quick visibility toggle for death saves without a full render
+  const maxHp = computeHP(state.level, computeStats(state.level));
+  renderDeathSaves(maxHp);
 });
 
 document.getElementById('temp-hp').addEventListener('input', (e) => {
@@ -2775,6 +3119,18 @@ document.getElementById('heavenly-wings-toggle').addEventListener('click', () =>
   renderCombatResources(state.level);
 });
 
+document.getElementById('hexblade-curse-toggle').addEventListener('click', () => {
+  state.hexbladesCurseUsed = !state.hexbladesCurseUsed;
+  saveState();
+  renderCombatResources(state.level);
+});
+
+document.getElementById('exhaustion-level').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value, 10);
+  state.exhaustion = isNaN(v) || v < 0 ? 0 : Math.min(6, v);
+  saveState();
+});
+
 document.getElementById('concentration-select').addEventListener('change', (e) => {
   state.concentratingOn = e.target.value || null;
   saveState();
@@ -2784,9 +3140,9 @@ document.getElementById('concentration-select').addEventListener('change', (e) =
 document.getElementById('short-rest-btn').addEventListener('click', () => {
   // Pact Magic slots recover on a Short Rest
   state.usedSlots.warlock = 0;
-  // Magical Cunning resets on Long Rest only — but the user might use it during the SR;
-  // we don't reset on SR. Hexblade's Curse recovers on SR or LR but isn't tracked as a
-  // usage flag in this build, so nothing to do for it.
+  // Hexblade's Curse: once per short OR long rest (legacy XGE)
+  state.hexbladesCurseUsed = false;
+  // (Magical Cunning is long-rest only per RAW; not reset here.)
   saveState();
   render();
 });
@@ -2799,7 +3155,11 @@ document.getElementById('long-rest-btn').addEventListener('click', () => {
   state.innateSorceryUsed = 0;
   state.magicalCunningUsed = false;
   state.heavenlyWingsUsed = false;
-  // concentratingOn left as-is — concentration isn't reset by rest, only by damage / new spell / death
+  state.hexbladesCurseUsed = false;
+  state.deathSavesSuccess = 0;
+  state.deathSavesFail = 0;
+  // concentratingOn left as-is — concentration isn't reset by rest, only by damage / new spell / death.
+  // Conditions and exhaustion are intentionally NOT reset (some persist through rests; the player clears manually).
   saveState();
   render();
 });
