@@ -930,6 +930,105 @@ body::before {
   background: rgba(150, 32, 37, 0.04);
 }
 
+/* WILD MAGIC SURGE */
+.surge-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0 1.2rem;
+  flex-wrap: wrap;
+}
+.surge-roll-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.55rem 1.3rem;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+  white-space: nowrap;
+}
+.surge-roll-btn:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+.surge-result {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--parchment-aged);
+  flex: 1;
+  min-width: 240px;
+}
+.surge-result strong {
+  font-family: 'Cinzel', serif;
+  font-style: normal;
+  color: var(--gold-bright);
+  letter-spacing: 0.15em;
+  margin-right: 0.4rem;
+}
+.surge-details summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--gold-tarnish);
+  background: rgba(10, 6, 8, 0.5);
+  text-align: center;
+  transition: background 0.3s;
+  user-select: none;
+}
+.surge-details summary:hover { background: rgba(184, 137, 58, 0.1); }
+.surge-details summary::-webkit-details-marker { display: none; }
+.surge-details summary::before {
+  content: '+ ';
+  margin-right: 0.4rem;
+}
+.surge-details[open] summary::before { content: '− '; }
+.surge-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.surge-table th {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--gold-tarnish);
+  text-align: left;
+}
+.surge-table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.18);
+  vertical-align: top;
+  color: var(--parchment-aged);
+}
+.surge-table .surge-range {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  white-space: nowrap;
+}
+.surge-table tr.hit td {
+  background: rgba(184, 137, 58, 0.12);
+  color: var(--parchment);
+}
+.surge-table tr.hit .surge-range {
+  color: var(--gold-bright);
+}
+
 .spell-search-input {
   width: 100%;
   box-sizing: border-box;
@@ -1448,7 +1547,8 @@ body.dm-mode .cast-btn,
 body.dm-mode .fom-btn,
 body.dm-mode .ds-pip,
 body.dm-mode .condition-pill,
-body.dm-mode .exhaustion-control input {
+body.dm-mode .exhaustion-control input,
+body.dm-mode .surge-roll-btn {
   pointer-events: none;
 }
 body.dm-mode .reset-btn,
@@ -1813,6 +1913,10 @@ body.dm-mode .dm-hide { display: none; }
         <span class="resource-label has-tip" title="Bonus action: for 1 minute, +1 to your Sorcerer spell save DC and advantage on Sorcerer spell attack rolls. 2 uses per Long Rest.">Innate Sorcery</span>
         <div class="resource-pips" id="innate-pips"></div>
       </div>
+      <div class="resource-row" id="resource-tides" hidden>
+        <span class="resource-label has-tip" title="Manipulate chaos for Advantage on one d20 Test (declare before you roll). Once used, you must cast a Sorcerer spell with a slot (auto-rolls on the Wild Magic Surge table) or finish a Long Rest to regain it.">Tides of Chaos</span>
+        <button class="resource-toggle" id="tides-toggle">Available</button>
+      </div>
       <div class="resource-row" id="resource-curse">
         <span class="resource-label has-tip" title="Bonus action: curse a creature within 30 ft you can see for 1 minute. While cursed it takes +PB damage from your attacks, you score critical hits against it on 19–20, and if it drops you regain HP equal to warlock level + CHA mod. Once per Short or Long Rest.">Hexblade's Curse</span>
         <button class="resource-toggle" id="hexblade-curse-toggle">Available</button>
@@ -1838,6 +1942,21 @@ body.dm-mode .dm-hide { display: none; }
           <!-- filled by JS -->
         </tbody>
       </table>
+    </div>
+
+    <div class="card" id="surge-card" style="margin-top: 2rem;" hidden>
+      <h3>Wild Magic Surge</h3>
+      <div class="surge-controls">
+        <button class="surge-roll-btn" id="surge-roll-btn" title="Roll 1d100 on the Wild Magic Surge table">↻ Roll Surge</button>
+        <div class="surge-result" id="surge-result">no roll yet</div>
+      </div>
+      <details class="surge-details">
+        <summary>Show / Hide Surge table</summary>
+        <table class="surge-table" id="surge-table">
+          <thead><tr><th style="width: 90px;">d100</th><th>Effect</th></tr></thead>
+          <tbody id="surge-tbody"></tbody>
+        </table>
+      </details>
     </div>
   </section>
 
@@ -2247,7 +2366,9 @@ const DEFAULT_STATE = {
   deathSavesFail: 0,          // 0-3
   conditions: {},             // { blinded: true, frightened: true, ... }
   exhaustion: 0,              // 0-6 (2024 exhaustion levels)
-  heroicInspiration: false    // 2024 PHB universal mechanic; advantage on one d20 roll
+  heroicInspiration: false,   // 2024 PHB universal mechanic; advantage on one d20 roll
+  tidesOfChaosUsed: false,    // Wild Magic sorc 3 feature; resets on long rest OR DM-triggered surge
+  lastSurgeRoll: null         // 1-100 of the last Wild Magic Surge roll, persists for DM visibility
 };
 
 let state = loadState();
@@ -2629,11 +2750,38 @@ function render() {
   document.getElementById('coin').value = state.coin;
   document.getElementById('notes').value = state.notes;
 
-  // Combat resources + concentration dropdown + death saves + conditions
+  // Combat resources + concentration dropdown + death saves + conditions + Wild Magic Surge
   renderCombatResources(level);
   renderConcentrationOptions(level);
   renderDeathSaves(hp);
   renderConditions();
+  renderSurge(level);
+}
+
+function renderSurge(level) {
+  const card = document.getElementById('surge-card');
+  const sorcLevel = classBreakdown(level).s;
+  // Wild Magic Surge unlocks at sorc 3 (char L7) when the subclass is picked.
+  if (sorcLevel < 3) { card.hidden = true; return; }
+  card.hidden = false;
+
+  const lastRoll = state.lastSurgeRoll;
+  const resultEl = document.getElementById('surge-result');
+  if (lastRoll) {
+    const entry = WILD_MAGIC_SURGES.find(e => lastRoll >= e.min && lastRoll <= e.max);
+    resultEl.innerHTML = `<strong>${lastRoll}</strong>${entry ? '— ' + entry.effect : ''}`;
+  } else {
+    resultEl.textContent = 'no roll yet';
+  }
+
+  const tbody = document.getElementById('surge-tbody');
+  tbody.innerHTML = '';
+  for (const e of WILD_MAGIC_SURGES) {
+    const tr = document.createElement('tr');
+    if (lastRoll && lastRoll >= e.min && lastRoll <= e.max) tr.className = 'hit';
+    tr.innerHTML = `<td class="surge-range">${e.range}</td><td>${e.effect}</td>`;
+    tbody.appendChild(tr);
+  }
 }
 
 function renderCombatResources(level) {
@@ -2698,9 +2846,46 @@ function renderCombatResources(level) {
   inspBtn.textContent = state.heroicInspiration ? 'Available' : 'None';
   inspBtn.classList.toggle('used', !state.heroicInspiration);
 
+  // Tides of Chaos (Wild Magic sorc 3+)
+  const tidesRow = document.getElementById('resource-tides');
+  if (sorcLevel >= 3) {
+    tidesRow.hidden = false;
+    const btn = document.getElementById('tides-toggle');
+    btn.textContent = state.tidesOfChaosUsed ? 'Used' : 'Available';
+    btn.classList.toggle('used', !!state.tidesOfChaosUsed);
+  } else { tidesRow.hidden = true; }
+
   // Font of Magic conversion (sorc 2+)
   renderFontOfMagic(level);
 }
+
+const WILD_MAGIC_SURGES = [
+  { range: '01–04', min: 1, max: 4, effect: 'Roll on this table at the start of each of your turns for the next minute, ignoring this result on subsequent rolls.' },
+  { range: '05–08', min: 5, max: 8, effect: 'A creature that is Friendly toward you appears in a random unoccupied space within 60 ft. It is under the DM\'s control and disappears 1 minute later. Roll 1d4: 1 — Modron Duodrone; 2 — Flumph; 3 — Modron Monodrone; 4 — Unicorn.' },
+  { range: '09–12', min: 9, max: 12, effect: 'For the next minute, you regain 5 Hit Points at the start of each of your turns.' },
+  { range: '13–16', min: 13, max: 16, effect: 'Creatures have Disadvantage on saving throws against the next spell you cast in the next minute that involves a saving throw.' },
+  { range: '17–20', min: 17, max: 20, effect: 'You are subjected to an effect for 1 minute (unless its description says otherwise). Roll 1d8: 1 — faint ethereal music only you and creatures within 5 ft can hear; 2 — your size increases by one category; 3 — long feather beard until you sneeze (feathers then explode); 4 — must shout when you speak; 5 — illusory butterflies flutter within 10 ft; 6 — eye on forehead grants Advantage on WIS (Perception) checks; 7 — pink bubbles float from your mouth when you speak; 8 — skin turns vibrant blue for 24h or until Remove Curse.' },
+  { range: '21–24', min: 21, max: 24, effect: 'For the next minute, all your spells with a casting time of an Action have a casting time of a Bonus Action.' },
+  { range: '25–28', min: 25, max: 28, effect: 'You are transported to the Astral Plane until the end of your next turn, then return to your previous space (or the nearest unoccupied one).' },
+  { range: '29–32', min: 29, max: 32, effect: 'The next time you cast a damage spell within the next minute, don\'t roll the damage dice — use the max value of each die.' },
+  { range: '33–36', min: 33, max: 36, effect: 'You have Resistance to all damage for the next minute.' },
+  { range: '37–40', min: 37, max: 40, effect: 'You turn into a potted plant until the start of your next turn. Incapacitated and Vulnerability to all damage. At 0 HP, the pot breaks and you revert.' },
+  { range: '41–44', min: 41, max: 44, effect: 'For the next minute, you can teleport up to 20 ft as a Bonus Action on each of your turns.' },
+  { range: '45–48', min: 45, max: 48, effect: 'You and up to three creatures of your choice within 30 ft have the Invisible condition for 1 minute. Ends on a creature after it attacks, deals damage, or casts a spell.' },
+  { range: '49–52', min: 49, max: 52, effect: 'A spectral shield hovers near you for 1 minute: +2 AC and immunity to Magic Missile.' },
+  { range: '53–56', min: 53, max: 56, effect: 'You can take one extra action on this turn.' },
+  { range: '57–60', min: 57, max: 60, effect: 'You cast a random spell — no Concentration required if it would normally need one; spell lasts its full duration. Roll 1d10: 1 — Confusion; 2 — Fireball; 3 — Fog Cloud; 4 — Fly (random creature within 60 ft); 5 — Grease; 6 — Levitate (self); 7 — Magic Missile (cast as a 5th-level spell); 8 — Mirror Image; 9 — Polymorph (self; failed save → Goat); 10 — See Invisibility.' },
+  { range: '61–64', min: 61, max: 64, effect: 'For the next minute, any flammable nonmagical object you touch (that isn\'t worn or carried by another creature) bursts into flame, takes 1d4 Fire damage, and is burning.' },
+  { range: '65–68', min: 65, max: 68, effect: 'If you die within the next hour, you immediately revive as if by Reincarnate.' },
+  { range: '69–72', min: 69, max: 72, effect: 'You have the Frightened condition until the end of your next turn. The DM determines the source.' },
+  { range: '73–76', min: 73, max: 76, effect: 'You teleport up to 60 ft to an unoccupied space you can see.' },
+  { range: '77–80', min: 77, max: 80, effect: 'A random creature within 60 ft has the Poisoned condition for 1d4 hours.' },
+  { range: '81–84', min: 81, max: 84, effect: 'You radiate Bright Light in a 30-ft radius for 1 minute. Any creature that ends its turn within 5 ft of you has the Blinded condition until the end of its next turn.' },
+  { range: '85–88', min: 85, max: 88, effect: 'Up to three creatures of your choice within 30 ft take 1d10 Necrotic damage. You regain HP equal to the total dealt.' },
+  { range: '89–92', min: 89, max: 92, effect: 'Up to three creatures of your choice within 30 ft take 4d10 Lightning damage.' },
+  { range: '93–96', min: 93, max: 96, effect: 'You and all creatures within 30 ft have Vulnerability to Piercing damage for the next minute.' },
+  { range: '97–00', min: 97, max: 100, effect: 'Roll 1d6: 1 — you regain 2d10 HP; 2 — one ally within 300 ft regains 2d10 HP; 3 — you regain your lowest-level expended spell slot; 4 — one ally within 300 ft regains their lowest-level expended spell slot; 5 — you regain all your expended Sorcery Points; 6 — all the effects of the 17–20 row affect you simultaneously.' }
+];
 
 const SLOT_COSTS = [
   { lvl: 1, cost: 2, minSorc: 2 },
@@ -3263,6 +3448,24 @@ document.getElementById('inspiration-toggle').addEventListener('click', () => {
   renderCombatResources(state.level);
 });
 
+document.getElementById('tides-toggle').addEventListener('click', () => {
+  state.tidesOfChaosUsed = !state.tidesOfChaosUsed;
+  saveState();
+  renderCombatResources(state.level);
+});
+
+document.getElementById('surge-roll-btn').addEventListener('click', () => {
+  const roll = Math.floor(Math.random() * 100) + 1; // 1-100
+  state.lastSurgeRoll = roll;
+  saveState();
+  renderSurge(state.level);
+  // Auto-scroll the hit row into view if the table is open
+  const hit = document.querySelector('#surge-table tr.hit');
+  if (hit && document.querySelector('.surge-details[open]')) {
+    hit.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+
 document.getElementById('exhaustion-level').addEventListener('input', (e) => {
   const v = parseInt(e.target.value, 10);
   state.exhaustion = isNaN(v) || v < 0 ? 0 : Math.min(6, v);
@@ -3306,6 +3509,7 @@ document.getElementById('long-rest-btn').addEventListener('click', () => {
   state.magicalCunningUsed = false;
   state.heavenlyWingsUsed = false;
   state.hexbladesCurseUsed = false;
+  state.tidesOfChaosUsed = false; // Wild Magic Tides of Chaos refreshes on LR (or DM-triggered surge)
   state.deathSavesSuccess = 0;
   state.deathSavesFail = 0;
   // concentratingOn left as-is — concentration isn't reset by rest, only by damage / new spell / death.
