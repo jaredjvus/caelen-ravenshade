@@ -2340,13 +2340,14 @@ function renderCombatResources(level) {
     const pipsContainer = document.getElementById('innate-pips');
     pipsContainer.innerHTML = '';
     const used = state.innateSorceryUsed || 0;
-    for (let i = 0; i < 2; i++) {
+    const max = 2;
+    for (let i = 0; i < max; i++) {
       const pip = document.createElement('div');
-      pip.className = 'pip' + (i < used ? '' : ' filled'); // .filled = unused (matches existing slot pip semantics)
+      pip.className = 'pip' + (i < max - used ? ' filled' : '');
       pip.addEventListener('click', () => {
-        // Toggle: if this pip currently shows used (no .filled), un-use it; else mark this and earlier as used
+        // Used eats from the right: filled pip on click → used := max - i; empty pip on click → used := max - i - 1.
         const u = state.innateSorceryUsed || 0;
-        state.innateSorceryUsed = (i < u) ? i : i + 1;
+        state.innateSorceryUsed = (i < max - u) ? max - i : max - i - 1;
         saveState();
         renderCombatResources(state.level);
       });
@@ -2402,7 +2403,8 @@ function renderSlots(level) {
     const pips = row.querySelector('.slot-pips');
     for (let i = 0; i < pact.count; i++) {
       const pip = document.createElement('div');
-      pip.className = 'pip' + (i < state.usedSlots.warlock ? '' : ' filled');
+      // Filled = unused. Used slots eat from the right, so pip i is filled when i < (max - used).
+      pip.className = 'pip' + (i < pact.count - (state.usedSlots.warlock || 0) ? ' filled' : '');
       pip.addEventListener('click', () => togglePip('warlock', i, pact.count));
       pips.appendChild(pip);
     }
@@ -2420,7 +2422,7 @@ function renderSlots(level) {
     const pips = row.querySelector('.slot-pips');
     for (let i = 0; i < count; i++) {
       const pip = document.createElement('div');
-      pip.className = 'pip' + (i < (state.usedSlots[key] || 0) ? '' : ' filled');
+      pip.className = 'pip' + (i < count - (state.usedSlots[key] || 0) ? ' filled' : '');
       pip.addEventListener('click', () => togglePip(key, i, count));
       pips.appendChild(pip);
     }
@@ -2438,18 +2440,12 @@ function ordinal(n) {
 }
 
 function togglePip(slotKey, index, max) {
-  const current = state.usedSlots[slotKey] || 0;
-  // Click on a filled pip = use it (increment used). Click on used pip = restore (decrement)
-  // Simpler: each pip toggles its own state. Compute new used based on click position.
-  // If pip at index is currently "filled" (available), clicking uses it → used = index + 1 if it's the highest available
-  // Cleanest: pip at index is filled if index >= used. Clicking it flips.
-  if (index >= current) {
-    // This pip is filled (available) — use it. Set used to index + 1
-    state.usedSlots[slotKey] = index + 1;
-  } else {
-    // This pip is empty (used) — restore. Set used to index
-    state.usedSlots[slotKey] = index;
-  }
+  // Used slots eat from the right, so pip i is filled when i < (max - used).
+  // Click on a filled pip → use enough so this pip and everything to its right go empty: used := max - index.
+  // Click on an empty pip → restore enough to refill from the left up to (but not including) this pip: used := max - index - 1.
+  const used = state.usedSlots[slotKey] || 0;
+  const isFilled = index < (max - used);
+  state.usedSlots[slotKey] = isFilled ? (max - index) : (max - index - 1);
   saveState();
   render();
 }
