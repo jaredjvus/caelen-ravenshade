@@ -665,7 +665,7 @@ body::before {
   color: var(--gold);
 }
 .resource-label.has-tip {
-  cursor: help;
+  cursor: pointer;
   border-bottom: 1px dotted var(--gold-tarnish);
 }
 .resource-label.has-tip:hover { color: var(--gold-bright); border-bottom-color: var(--gold); }
@@ -1182,38 +1182,67 @@ body::before {
 .spell-search-input:focus { border-bottom-color: var(--gold); }
 .spell-search-input::placeholder { color: var(--parchment-dim); font-style: italic; }
 
-.spell-table .level-tag {
-  display: inline-block;
-  font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--gold-tarnish);
-  color: var(--gold);
-  text-transform: uppercase;
-  white-space: nowrap;
-  background: transparent;
+/* Spell row: name + source on left, cast button on the right (Rivet-style) */
+.spell-table td.spell-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
-.spell-table button.cast-btn.level-tag {
+.spell-table td.spell-name .spell-info-btn {
+  background: transparent;
+  border: none;
+  color: var(--parchment);
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+.spell-table td.spell-name .spell-info-btn:hover { color: var(--gold-bright); }
+.spell-table td.spell-name .spell-source {
+  display: block;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--parchment-aged);
+}
+.spell-table td.spell-action-cell {
+  vertical-align: middle;
+  text-align: right;
+  white-space: nowrap;
+  width: 90px;
+}
+.spell-table button.cast-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  background: transparent;
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
+  white-space: nowrap;
 }
-.spell-table button.cast-btn.level-tag:hover {
+.spell-table button.cast-btn:hover {
   background: var(--gold);
   color: var(--ink);
   border-color: var(--gold);
 }
-.spell-table button.cast-btn.level-tag:disabled {
+.spell-table button.cast-btn:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }
-.spell-table button.cast-btn.level-tag.no-slots {
+.spell-table button.cast-btn.no-slots {
   border-color: var(--blood);
   color: var(--blood-bright);
   text-decoration: line-through;
   opacity: 0.7;
 }
-.spell-table button.cast-btn.level-tag.no-slots:hover {
+.spell-table button.cast-btn.no-slots:hover {
   background: var(--blood);
   color: var(--parchment);
   border-color: var(--blood);
@@ -2508,9 +2537,6 @@ body.dm-mode .dm-hide { display: none; }
       <div class="collapsible-body">
       <input type="search" id="spell-search" class="spell-search-input" placeholder="Filter spells by name…" autocomplete="off">
       <table class="spell-table">
-        <thead>
-          <tr><th style="width: 100px;">Level</th><th>Spell</th><th>Notes</th></tr>
-        </thead>
         <tbody id="spells-tbody">
           <!-- filled by JS -->
         </tbody>
@@ -4324,25 +4350,32 @@ function renderSpells(level) {
       const headerTr = document.createElement('tr');
       headerTr.className = 'spell-level-header';
       const label = spell.level === 'Cantrip' ? 'Cantrips' : `Level ${SPELL_LEVEL_ORDER[spell.level]}`;
-      headerTr.innerHTML = `<td colspan="3">${label}</td>`;
+      headerTr.innerHTML = `<td colspan="2">${label}</td>`;
       tbody.appendChild(headerTr);
     }
 
     if (isKnown) {
       const tr = document.createElement('tr');
       const isCantrip = SPELL_LEVEL_ORDER[spell.level] === 0;
-      let levelCell;
-      if (isCantrip) {
-        levelCell = `<span class="level-tag">${spell.level}</span>`;
-      } else {
+      const concTag = spell.concentration ? '<span class="conc-tag-inline">C</span>' : '';
+
+      // Cast button on the right side. Cantrips have no cast button (no slots).
+      let castCell = '';
+      if (!isCantrip) {
         const tiers = getValidSlotTiers(spell, level);
         const anyAvailable = tiers.some(t => (t.max - t.used) > 0);
-        const classes = 'level-tag cast-btn' + (anyAvailable ? '' : ' no-slots');
+        const classes = 'cast-btn' + (anyAvailable ? '' : ' no-slots');
         const titleAttr = anyAvailable ? 'Click to cast' : 'No slots available at or above this spell\'s level';
-        levelCell = `<button class="${classes}" data-spell="${spell.name}" title="${titleAttr}">${spell.level}</button>`;
+        castCell = `<button class="${classes}" data-spell="${spell.name}" title="${titleAttr}">Cast</button>`;
       }
-      const concTag = spell.concentration ? '<span class="conc-tag-inline">C</span>' : '';
-      tr.innerHTML = `<td>${levelCell}</td><td class="spell-name"><button class="spell-info-btn" data-spell="${spell.name}" title="Spell details">${spell.name}${concTag}</button></td><td class="spell-source">${spell.class || ''}</td>`;
+
+      tr.innerHTML = `
+        <td class="spell-name">
+          <button class="spell-info-btn" data-spell="${spell.name}" title="Spell details">${spell.name}${concTag}</button>
+          <span class="spell-source">${spell.class || ''}</span>
+        </td>
+        <td class="spell-action-cell">${castCell}</td>
+      `;
       const btn = tr.querySelector('.cast-btn');
       if (btn) {
         btn.addEventListener('click', (e) => {
@@ -4359,7 +4392,13 @@ function renderSpells(level) {
       // Preview row for the next level
       const tr = document.createElement('tr');
       tr.className = 'preview';
-      tr.innerHTML = `<td><span class="level-tag">${spell.level}</span></td><td class="spell-name">${spell.name}<span class="preview-tag">Next Level</span></td><td class="spell-source">${spell.class || ''}</td>`;
+      tr.innerHTML = `
+        <td class="spell-name">
+          ${spell.name}<span class="preview-tag">Next Level</span>
+          <span class="spell-source">${spell.class || ''}</span>
+        </td>
+        <td class="spell-action-cell"></td>
+      `;
       tbody.appendChild(tr);
     }
   }
@@ -4918,6 +4957,21 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('summary') && e.target.closest('button')) {
     e.preventDefault();
   }
+});
+
+// Click any .has-tip element to open its title in the styled info modal.
+// (Hover tooltips are still available via the native title attribute.)
+document.addEventListener('click', (e) => {
+  const tip = e.target.closest('.has-tip[title]');
+  if (!tip) return;
+  // Strip nested meta spans (e.g. "(d8 · Warlock)") from the label so the
+  // modal title stays clean; the body uses the full title text.
+  const labelClone = tip.cloneNode(true);
+  labelClone.querySelectorAll('.resource-meta').forEach(el => el.remove());
+  const label = labelClone.textContent.trim().replace(/\s+/g, ' ');
+  const body = tip.title.replace(/[<>]/g, c => ({'<':'&lt;','>':'&gt;'}[c]));
+  showInfo(label, `<p style="font-family:'EB Garamond',serif; font-size:0.95rem; color:var(--parchment); line-height:1.55; margin:0;">${body}</p>`);
+  e.preventDefault();
 });
 
 // Options dropdown (Export / Import / Reset)
