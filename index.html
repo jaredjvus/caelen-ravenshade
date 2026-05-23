@@ -4859,11 +4859,28 @@ document.getElementById('conditions-clear').addEventListener('click', () => {
 document.getElementById('spell-search').addEventListener('input', (e) => {
   const q = e.target.value.toLowerCase().trim();
   const tbody = document.getElementById('spells-tbody');
-  for (const tr of tbody.children) {
-    const nameCell = tr.querySelector('.spell-name');
+  // First pass: show/hide spell rows based on name match. Level-header rows
+  // are tracked so we can hide empty groups in a second pass.
+  let currentHeader = null;
+  let currentHeaderHasVisible = false;
+  const rows = Array.from(tbody.children);
+  for (const tr of rows) {
+    if (tr.classList.contains('spell-level-header')) {
+      // Finalize the previous header before moving on
+      if (currentHeader) currentHeader.style.display = currentHeaderHasVisible ? '' : 'none';
+      currentHeader = tr;
+      currentHeaderHasVisible = false;
+      tr.style.display = '';
+      continue;
+    }
+    const nameCell = tr.querySelector('.spell-name-cell');
     const name = nameCell ? nameCell.textContent.toLowerCase() : '';
-    tr.style.display = (q === '' || name.includes(q)) ? '' : 'none';
+    const matches = q === '' || name.includes(q);
+    tr.style.display = matches ? '' : 'none';
+    if (matches) currentHeaderHasVisible = true;
   }
+  // Finalize the last header
+  if (currentHeader) currentHeader.style.display = currentHeaderHasVisible ? '' : 'none';
 });
 
 document.getElementById('concentration-select').addEventListener('change', (e) => {
