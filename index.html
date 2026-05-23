@@ -4727,11 +4727,19 @@ function levelUp() {
   render();
 }
 function levelDown() {
-  if ((state.level || 1) <= 1) return;
-  state.level = (state.level || 1) - 1;
-  state.hpCurrent = null;
-  saveState();
-  render();
+  const current = state.level || 1;
+  if (current <= 1) return;
+  const target = current - 1;
+  showConfirm('Level Down?',
+    `<p>Step back to level <strong>${target}</strong>?</p>
+     <div class="confirm-note">Class features, slots, and Sorcery Points unlocked at level ${current} will hide. HP recalculates. You can return any time via Level Up.</div>`,
+    () => {
+      state.level = target;
+      state.hpCurrent = null;
+      saveState();
+      render();
+    },
+    { okLabel: 'Level Down' });
 }
 document.getElementById('level-up-btn').addEventListener('click', levelUp);
 document.getElementById('level-down-btn').addEventListener('click', levelDown);
