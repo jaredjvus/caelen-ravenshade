@@ -4734,11 +4734,7 @@ function levelDown() {
   render();
 }
 document.getElementById('level-up-btn').addEventListener('click', levelUp);
-document.getElementById('level-down-btn').addEventListener('click', () => {
-  document.getElementById('options-dropdown').hidden = true;
-  document.removeEventListener('click', closeOptionsOnOutside);
-  levelDown();
-});
+document.getElementById('level-down-btn').addEventListener('click', levelDown);
 
 document.getElementById('hp-current').addEventListener('input', (e) => {
   const v = parseInt(e.target.value, 10);
@@ -4999,6 +4995,15 @@ function closeOptionsOnOutside(e) {
   dd.hidden = true;
   document.removeEventListener('click', closeOptionsOnOutside);
 }
+
+// Any button click inside the dropdown should close it (file input excluded —
+// it's the hidden picker behind the Import button, fired via .click()).
+document.getElementById('options-dropdown').addEventListener('click', (e) => {
+  if (e.target.closest('button')) {
+    document.getElementById('options-dropdown').hidden = true;
+    document.removeEventListener('click', closeOptionsOnOutside);
+  }
+});
 
 document.getElementById('export-btn').addEventListener('click', () => {
   const payload = { ...state, _exportedAt: new Date().toISOString(), _app: STORAGE_KEY };
