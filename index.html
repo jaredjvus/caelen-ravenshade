@@ -136,11 +136,31 @@ body::before {
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 1.5rem;
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+.level-cluster {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
   gap: 1.5rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  width: 100%;
+  max-width: 640px;
+}
+.level-cluster .level-label { justify-self: end; }
+.level-cluster .level-up-btn { justify-self: start; }
+@media (max-width: 600px) {
+  .level-cluster { grid-template-columns: 1fr; justify-items: center; }
+  .level-cluster .level-label, .level-cluster .level-up-btn { justify-self: center; }
+}
+.level-inner .options-menu {
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .level-label {
@@ -151,53 +171,60 @@ body::before {
   text-transform: uppercase;
 }
 
-.level-slider-wrap {
-  flex: 1;
-  min-width: 220px;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.level-slider {
-  flex: 1;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  background: linear-gradient(90deg, var(--gold-tarnish), var(--gold));
-  outline: none;
-  border-radius: 2px;
-}
-.level-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  background: var(--blood-bright);
-  border: 2px solid var(--gold);
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 0 8px rgba(150, 32, 37, 0.6);
-}
-.level-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  background: var(--blood-bright);
-  border: 2px solid var(--gold);
-  border-radius: 50%;
-  cursor: pointer;
-}
-
 .level-display {
   font-family: 'Cinzel', serif;
-  font-size: 1.6rem;
+  font-size: 1.9rem;
   font-weight: 700;
-  color: var(--parchment);
-  min-width: 60px;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  min-width: 62px;
   text-align: center;
-  padding: 0.2rem 0.8rem;
+  padding: 0.25rem 1rem;
+  border: 2px solid var(--gold);
+  background: rgba(10, 6, 8, 0.7);
+  box-shadow: 0 2px 8px rgba(184, 137, 58, 0.18);
+  line-height: 1;
+}
+.level-display::before {
+  content: 'LV';
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  color: var(--gold-tarnish);
+  margin-bottom: 0.15rem;
+  font-weight: 400;
+}
+.level-up-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--gold);
   border: 1px solid var(--gold);
-  background: rgba(10, 6, 8, 0.6);
+  padding: 0.5rem 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+.level-up-btn:hover {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+}
+.level-up-btn:active { transform: translateY(1px); }
+.level-up-btn:disabled {
+  border-color: var(--gold-tarnish);
+  color: var(--gold-tarnish);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.options-divider {
+  height: 1px;
+  background: var(--gold-tarnish);
+  margin: 0.3rem 0;
+  opacity: 0.4;
 }
 
 .level-classes {
@@ -308,6 +335,72 @@ body::before {
 }
 .section-title::before { left: 0; }
 .section-title::after { right: 0; }
+
+/* Collapsible section + card (ported from Rivet) — chevron toggles */
+.section > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+.section > summary::-webkit-details-marker { display: none; }
+.section > summary .section-title {
+  margin: 0;
+  flex: 1;
+}
+.section > summary::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--gold);
+  border-bottom: 2px solid var(--gold);
+  transform: rotate(-45deg);
+  margin-bottom: 3px;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.section[open] > summary::after { transform: rotate(45deg); margin-bottom: 0; margin-top: -3px; }
+.section > summary:hover .section-title { color: var(--gold-bright); }
+.section > summary:hover::after { border-color: var(--gold-bright); }
+
+.collapsible-card { padding: 0; }
+.collapsible-card summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1.4rem 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.collapsible-card summary::-webkit-details-marker { display: none; }
+.collapsible-card summary h3 {
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.collapsible-card summary::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid var(--gold);
+  border-bottom: 2px solid var(--gold);
+  transform: rotate(-45deg);
+  margin-left: 0.8rem;
+  margin-bottom: 3px;
+  transition: transform 0.2s ease;
+}
+.collapsible-card[open] summary::after { transform: rotate(45deg); margin-bottom: 0; margin-top: -3px; }
+.collapsible-card summary:hover h3 { color: var(--gold-bright); }
+.collapsible-card summary:hover::after { border-color: var(--gold-bright); }
+.collapsible-card .collapsible-body {
+  padding: 0 1.6rem 1.4rem;
+  border-top: 1px dotted var(--gold-tarnish);
+  padding-top: 1rem;
+}
 
 /* STATS */
 .stats-grid {
@@ -475,6 +568,25 @@ body::before {
   color: var(--ink);
 }
 .inspiring-btn[hidden] { display: none; }
+
+.hp-info-btn {
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  font-size: 0.78rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  padding: 0;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+.hp-info-btn:hover { background: var(--gold); color: var(--ink); }
 
 /* CONCENTRATION TRACKER */
 .concentration-tracker {
@@ -750,6 +862,21 @@ body::before {
 @media (max-width: 420px) {
   .conditions-pills { grid-template-columns: repeat(2, 1fr); }
 }
+.conditions-clear-btn {
+  margin-left: 0.6rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  padding: 0.15rem 0.5rem;
+  cursor: pointer;
+}
+.conditions-clear-btn:hover { background: var(--gold); color: var(--ink); }
+.conditions-clear-btn[hidden] { display: none; }
+
 .condition-pill {
   font-family: 'EB Garamond', serif;
   font-size: 0.82rem;
@@ -1138,6 +1265,347 @@ body::before {
   font-style: italic;
   color: var(--blood-bright);
   padding: 0.5rem;
+}
+
+/* MODAL (ported from Rivet) — styled confirm + info dialogs */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.modal-overlay[hidden] { display: none; }
+.modal {
+  background: var(--ink-deep);
+  border: 1px solid var(--gold);
+  padding: 2.5rem 2rem 2rem;
+  max-width: 560px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.7);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal::-webkit-scrollbar { width: 8px; }
+.modal::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+.modal::-webkit-scrollbar-thumb { background: var(--gold-tarnish); border-radius: 4px; }
+.modal-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.8rem;
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-size: 1.8rem;
+  font-family: 'Cinzel', serif;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.2rem 0.6rem;
+}
+.modal-close:hover { color: var(--gold-bright); }
+.modal-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+.modal-subtitle {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--parchment-aged);
+  text-align: center;
+  margin-bottom: 1.8rem;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.4rem;
+}
+.modal-confirm {
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: var(--gold);
+  color: var(--ink);
+  border: 1px solid var(--gold);
+  padding: 0.6rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.modal-confirm:hover {
+  background: var(--gold-bright);
+  border-color: var(--gold-bright);
+}
+.modal-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--gold-tarnish);
+  border-color: var(--gold-tarnish);
+}
+.modal-cancel {
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold-tarnish);
+  padding: 0.6rem 1.4rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.modal-cancel:hover {
+  background: rgba(184, 137, 58, 0.1);
+  border-color: var(--gold);
+}
+
+/* Generic confirmation modal */
+.confirm-modal {
+  max-width: 520px;
+  padding-top: 2.2rem;
+}
+.confirm-body {
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--parchment);
+  margin: 0.5rem 0 1.2rem;
+}
+.confirm-body p { margin: 0 0 0.7rem; }
+.confirm-body ul {
+  list-style: none;
+  margin: 0.4rem 0;
+  padding: 0;
+}
+.confirm-body li {
+  padding: 0.2rem 0 0.2rem 1.2rem;
+  position: relative;
+  color: var(--parchment-aged);
+}
+.confirm-body li::before {
+  content: '·';
+  position: absolute;
+  left: 0.4rem;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 1.1em;
+  line-height: 1.4;
+}
+.confirm-body .confirm-note {
+  font-style: italic;
+  color: var(--parchment-aged);
+  font-size: 0.92rem;
+  margin-top: 0.8rem;
+  padding-top: 0.6rem;
+  border-top: 1px dotted var(--gold-tarnish);
+}
+.confirm-actions { justify-content: space-between; }
+.confirm-actions .modal-cancel[hidden] { display: none; }
+.confirm-actions:has(.modal-cancel[hidden]) { justify-content: center; }
+
+/* Spell info modal layout */
+.spell-info-subtitle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px dotted var(--gold-tarnish);
+  text-align: center;
+}
+.spell-info-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  font-family: 'EB Garamond', serif;
+}
+.spell-info-grid dt {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  align-self: center;
+}
+.spell-info-grid dd {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--parchment);
+}
+
+/* Magic Items card */
+.magic-items-summary {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.85rem;
+  color: var(--parchment-aged);
+  font-style: italic;
+  margin: 0 0 0.6rem;
+}
+.magic-item-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem 0.8rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted rgba(184, 137, 58, 0.18);
+  align-items: start;
+}
+.magic-item-row:last-child { border-bottom: none; }
+.magic-item-row .mi-name {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--parchment);
+}
+.magic-item-row .mi-name .rarity-tag,
+.magic-item-row .mi-name .attune-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  padding: 0 0.3rem;
+  margin-left: 0.3rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  font-weight: normal;
+  vertical-align: middle;
+}
+.magic-item-row .mi-name .rarity-tag { background: var(--gold-tarnish); color: var(--ink); }
+.magic-item-row .mi-name .attune-tag { background: transparent; color: var(--gold); border: 1px solid var(--gold-tarnish); }
+.magic-item-row .mi-name .attune-tag.attune-tag-on { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.magic-item-row .mi-row-meta {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.8rem;
+  color: var(--parchment-aged);
+}
+.magic-item-row .mi-row-notes {
+  grid-column: 1 / -1;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.85rem;
+  color: var(--parchment-aged);
+  white-space: pre-wrap;
+}
+.magic-item-row .mi-row-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+.magic-item-row .mi-charge-pips {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.2rem 0;
+}
+.magic-item-row .mi-charge-pips .pip {
+  width: 12px; height: 12px;
+  border: 1.5px solid var(--gold);
+  background: var(--gold);
+  cursor: pointer;
+}
+.magic-item-row .mi-charge-pips .pip.used { background: transparent; }
+.magic-item-row .mi-charge-pips .pip:hover { border-color: var(--gold-bright); }
+.magic-item-row .mi-edit-btn,
+.magic-item-row .mi-attune-toggle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+}
+.magic-item-row .mi-edit-btn:hover,
+.magic-item-row .mi-attune-toggle:hover { background: var(--gold); color: var(--ink); }
+.magic-item-row .mi-attune-toggle.on { background: var(--gold); color: var(--ink); }
+
+/* Add/Edit Magic Item form */
+.magic-item-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+.mi-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.95rem;
+  color: var(--parchment);
+}
+.mi-field-full { grid-column: 1 / -1; }
+.mi-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mi-field .mi-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-tarnish);
+}
+.mi-field input[type="text"],
+.mi-field input[type="number"],
+.mi-field select,
+.mi-field textarea {
+  background: rgba(10, 6, 8, 0.6);
+  border: 1px solid var(--gold-tarnish);
+  color: var(--parchment);
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.5rem;
+  outline: none;
+}
+.mi-field input:focus,
+.mi-field select:focus,
+.mi-field textarea:focus { border-color: var(--gold); }
+.mi-field textarea { resize: vertical; min-height: 60px; }
+.modal-prompt {
+  border: 1px dotted var(--gold);
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.6rem;
+  background: rgba(184, 137, 58, 0.05);
+}
+
+/* Spell-name info button (clickable name to open spell info modal) */
+.spell-info-btn {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.spell-info-btn:hover { color: var(--gold-bright); }
+.spell-info-btn .conc-tag-inline {
+  display: inline-block;
+  font-size: 0.65rem;
+  background: var(--gold-tarnish);
+  color: var(--ink);
+  padding: 0 0.25rem;
+  margin-left: 0.3rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  font-weight: normal;
+  vertical-align: middle;
 }
 
 .preview-tag {
@@ -1535,6 +2003,7 @@ body.dm-mode .dm-banner { display: block; }
 body.dm-mode .level-slider,
 body.dm-mode input:not([type=file]),
 body.dm-mode textarea,
+body.dm-mode select,
 body.dm-mode .pip,
 body.dm-mode .alt-control label,
 body.dm-mode .alt-control input,
@@ -1548,14 +2017,19 @@ body.dm-mode .fom-btn,
 body.dm-mode .ds-pip,
 body.dm-mode .condition-pill,
 body.dm-mode .exhaustion-control input,
-body.dm-mode .surge-roll-btn {
+body.dm-mode .surge-roll-btn,
+body.dm-mode .mi-attune-toggle,
+body.dm-mode .mi-charge-pips .pip {
   pointer-events: none;
 }
 body.dm-mode .reset-btn,
 body.dm-mode .io-btn,
 body.dm-mode .options-menu,
 body.dm-mode .header-action[data-add],
+body.dm-mode .header-action,
 body.dm-mode .inv-remove,
+body.dm-mode .mi-edit-btn,
+body.dm-mode .conditions-clear-btn,
 body.dm-mode #save-local {
   display: none !important;
 }
@@ -1627,6 +2101,17 @@ body.dm-mode .dm-hide { display: none; }
   margin: 0 0 1.3rem;
 }
 .backstory-content p:last-of-type { margin-bottom: 0; }
+/* Drop cap on the first paragraph (after the subtitle) */
+.backstory-subtitle + p::first-letter {
+  font-family: 'Cinzel', 'EB Garamond', serif;
+  font-weight: 700;
+  font-size: 4.2rem;
+  line-height: 0.9;
+  float: left;
+  padding: 0.4rem 0.55rem 0 0;
+  color: var(--gold);
+  margin-top: 0.15rem;
+}
 .backstory-content .scene-break {
   text-align: center;
   color: var(--gold-tarnish);
@@ -1665,14 +2150,16 @@ body.dm-mode .dm-hide { display: none; }
   <!-- LEVEL CONTROL -->
   <div class="level-control">
     <div class="level-inner">
-      <span class="level-label">Character Level</span>
-      <div class="level-slider-wrap">
-        <input type="range" min="1" max="20" value="1" class="level-slider" id="level-slider">
+      <div class="level-cluster">
+        <span class="level-label">Character Level</span>
         <div class="level-display" id="level-display">1</div>
+        <button class="level-up-btn" id="level-up-btn" title="Advance to the next level">↑ Level Up</button>
       </div>
       <div class="options-menu">
         <button class="options-btn" id="options-toggle" title="Options" aria-label="Open options menu">⋯</button>
         <div class="options-dropdown" id="options-dropdown" hidden>
+          <button class="io-btn" id="level-down-btn" title="Step back to the previous level">↓ Level Down</button>
+          <div class="options-divider"></div>
           <button class="io-btn" id="export-btn" title="Download a JSON backup of this sheet">Export</button>
           <button class="io-btn" id="import-btn" title="Restore a sheet from a JSON backup">Import</button>
           <input type="file" id="import-file" accept="application/json,.json" style="display:none">
@@ -1684,8 +2171,8 @@ body.dm-mode .dm-hide { display: none; }
   </div>
 
   <!-- ABILITY SCORES -->
-  <section class="section">
-    <h2 class="section-title">Ability Scores</h2>
+  <details class="section" open>
+    <summary><h2 class="section-title">Ability Scores</h2></summary>
     <div class="stats-grid">
       <div class="stat-block">
         <div class="stat-label">STR</div>
@@ -1724,7 +2211,7 @@ body.dm-mode .dm-hide { display: none; }
 
     <div class="conditions-row">
       <div class="conditions-header">
-        <div class="conditions-label">Conditions</div>
+        <div class="conditions-label">Conditions <button class="conditions-clear-btn" id="conditions-clear" hidden>Clear All</button></div>
         <div class="exhaustion-control">
           <span>Exhaustion</span>
           <input type="number" id="exhaustion-level" value="0" min="0" max="6">
@@ -1741,13 +2228,12 @@ body.dm-mode .dm-hide { display: none; }
         <div class="sub">leather + DEX</div>
       </div>
       <div class="defense-cell">
-        <div class="label">Hit Points</div>
+        <div class="label">Hit Points <button class="hp-info-btn" id="hp-info-btn" title="HP formula breakdown" aria-label="HP formula breakdown">ⓘ</button></div>
         <div class="hp-current">
           <input type="number" id="hp-current" value="9" min="0">
           <span class="sep">/</span>
           <span id="hp-max">9</span>
         </div>
-        <div class="sub" id="hp-formula">d8 + 3 (CON)</div>
         <div class="temp-hp-row">
           + <input type="number" id="temp-hp" value="0" min="0"> <span class="temp-hp-label">temp</span>
         </div>
@@ -1769,14 +2255,17 @@ body.dm-mode .dm-hide { display: none; }
         <div class="sub" id="speed-sub">walking</div>
       </div>
     </div>
-  </section>
+  </details>
 
   <!-- THE BEARER -->
-  <section class="section">
-    <h2 class="section-title">The Bearer</h2>
+  <details class="section" open>
+    <summary><h2 class="section-title">The Bearer</h2></summary>
     <div class="two-col">
-      <div class="card">
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Origins</h3>
+        </summary>
+        <div class="collapsible-body">
         <ul>
           <li><strong>Name</strong><br>Caelen Ravenshade</li>
           <li><strong>Species</strong><br>Aasimar — half-elven mother, celestial father. Has chosen the "fallen" path in flavor though not in alignment.</li>
@@ -1786,35 +2275,47 @@ body.dm-mode .dm-hide { display: none; }
           <li><strong>Hair</strong><br>Black, shoulder-length, often tied back for performance</li>
           <li><strong>Marks</strong><br>Fingertips darkened to charcoal grey at the nails. A cracked silver pendant worn under the collar at all times.</li>
         </ul>
-      </div>
-      <div class="card">
+        </div>
+      </details>
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Calling</h3>
+        </summary>
+        <div class="collapsible-body">
         <ul>
           <li><strong>Patron</strong><br>The Hollow Choir — a bound entity inherited through the maternal line, contained in a silver pendant until the seal cracked.</li>
           <li><strong>Sorcerous Origin</strong><br>Wild Magic — celestial blood and aberrant ancestry colliding under pressure from the Choir.</li>
-          <li><strong>Pact Boon</strong><br>Pact of the Chain (at Warlock 3). Familiar: <em>Vex</em>, an imp who suspects his real master is not Caelen but the thing inside the pendant.</li>
+          <li><strong>Pact Boon</strong><br>Pact of the Chain (at Warlock 3). Familiar: <em>Vex</em>, an imp who suspects her real master is not Caelen but the thing inside the pendant.</li>
           <li><strong>Languages</strong><br>Common, Celestial, Elvish</li>
           <li><strong>Faith</strong><br>None openly. Privately, prays to a celestial father he has never met.</li>
         </ul>
-      </div>
+        </div>
+      </details>
     </div>
-  </section>
+  </details>
 
   <!-- COMBAT -->
-  <section class="section dm-hide">
-    <h2 class="section-title">The Engine</h2>
+  <details class="section dm-hide" open>
+    <summary><h2 class="section-title">The Engine</h2></summary>
     <div class="two-col">
-      <div class="card">
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Eldritch Blast</h3>
+        </summary>
+        <div class="collapsible-body">
         <p><strong>To Hit</strong> · <span id="eb-tohit">+6</span> · ranged spell attack, 120 ft</p>
         <p><strong>Damage Per Beam</strong> · <span id="eb-damage">1d10 + 0</span> force</p>
         <p><strong>Beams</strong> · <span id="eb-beams">1</span> at this level</p>
         <p style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dotted rgba(184, 137, 58, 0.3);" id="eb-invocations">
           <em>Agonizing Blast and Repelling Blast unlock at Warlock 2.</em>
         </p>
-      </div>
-      <div class="card">
+        </div>
+      </details>
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Hexblade's Curse</h3>
+        </summary>
+        <div class="collapsible-body">
         <p>Bonus action. Target one creature within 30 ft you can see. Until you finish a short or long rest, the cursed target:</p>
         <ul>
           <li>Takes +<span id="curse-bonus">2</span> bonus damage from your attacks (proficiency bonus)</li>
@@ -1822,38 +2323,47 @@ body.dm-mode .dm-hide { display: none; }
           <li>If it drops to 0 HP, you regain HP equal to your warlock level + CHA mod (<span id="curse-heal">5</span>)</li>
         </ul>
         <p style="margin-top: 1rem;"><em>Recharges on a short or long rest.</em></p>
-      </div>
+        </div>
+      </details>
     </div>
 
     <div style="margin-top: 2rem;" id="combat-loops">
       <!-- Filled by JS based on level -->
     </div>
-  </section>
+  </details>
 
   <!-- SAVES & SKILLS -->
-  <section class="section">
-    <h2 class="section-title">Proficiencies</h2>
+  <details class="section" open>
+    <summary><h2 class="section-title">Proficiencies</h2></summary>
     <div class="two-col">
-      <div class="card">
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Saving Throws</h3>
+        </summary>
+        <div class="collapsible-body">
         <div class="skills-grid" style="grid-template-columns: 1fr;" id="saves-grid">
           <!-- filled by JS -->
         </div>
         <p style="margin-top: 1rem; font-style: italic; font-size: 0.9rem;" id="saves-note">Warlock grants Wisdom and Charisma save proficiency.</p>
-      </div>
-      <div class="card">
+        </div>
+      </details>
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Skills</h3>
+        </summary>
+        <div class="collapsible-body">
         <div class="skills-grid" id="skills-grid">
           <!-- filled by JS -->
         </div>
         <p style="margin-top: 1rem; font-style: italic; font-size: 0.85rem;">Proficiency Bonus: <span id="prof-bonus">+2</span></p>
-      </div>
+        </div>
+      </details>
     </div>
-  </section>
+  </details>
 
   <!-- SPELLS & SLOTS -->
-  <section class="section">
-    <h2 class="section-title">Magic</h2>
+  <details class="section" open>
+    <summary><h2 class="section-title">Magic</h2></summary>
 
     <div class="concentration-tracker" id="concentration-wrap">
       <span class="concentration-label">Concentrating on</span>
@@ -1863,8 +2373,11 @@ body.dm-mode .dm-hide { display: none; }
     </div>
 
     <div class="two-col">
-      <div class="card">
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Spell Slots</h3>
+        </summary>
+        <div class="collapsible-body">
         <div id="slots-container">
           <!-- filled by JS -->
         </div>
@@ -1872,18 +2385,26 @@ body.dm-mode .dm-hide { display: none; }
         <p style="margin-top: 0.5rem; font-size: 0.9rem; font-style: italic;" id="sorcery-display">
           Sorcery points unlock at character level 6 (Sorcerer 2).
         </p>
-      </div>
-      <div class="card">
+        </div>
+      </details>
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Musician (Origin Feat)</h3>
+        </summary>
+        <div class="collapsible-body">
         <p>After a short or long rest, distribute <strong>Bardic Inspiration dice</strong> (d6) equal to your proficiency bonus among allies (including yourself) within 30 ft who can hear you play.</p>
         <p style="margin-top: 1rem;">Inspiration dice last 1 hour and add to one attack roll, ability check, or saving throw.</p>
         <p style="margin-top: 1rem;"><em>Instrument: lute.</em></p>
         <p style="margin-top: 1rem;"><strong>Dice to distribute:</strong> <span id="musician-dice">2</span></p>
-      </div>
+        </div>
+      </details>
     </div>
 
-    <div class="card combat-resources" id="combat-resources-card" style="margin-top: 2rem;">
+    <details class="card collapsible-card combat-resources" id="combat-resources-card" style="margin-top: 2rem;" open>
+      <summary>
       <h3>Combat Resources</h3>
+      </summary>
+      <div class="collapsible-body">
       <div class="rest-buttons">
         <button class="rest-btn" id="short-rest-btn" title="Restores Pact slots; refreshes Hexblade's Curse and Magical Cunning">Short Rest</button>
         <button class="rest-btn" id="long-rest-btn" title="Restores HP, all slots, Sorcery Points, Innate Sorcery, Magical Cunning, Heavenly Wings, clears Temp HP">Long Rest</button>
@@ -1929,10 +2450,14 @@ body.dm-mode .dm-hide { display: none; }
         <span class="resource-label has-tip" title="Bonus action: sprout two spectral wings for 1 minute. Gain a Fly Speed equal to your Speed. Shared Celestial Revelation rider: once per turn deal extra radiant damage equal to your Proficiency Bonus on a hit. Once per Long Rest.">Heavenly Wings</span>
         <button class="resource-toggle" id="heavenly-wings-toggle">Available</button>
       </div>
-    </div>
+      </div>
+    </details>
 
-    <div class="card" style="margin-top: 2rem;">
+    <details class="card collapsible-card" style="margin-top: 2rem;" open>
+      <summary>
       <h3>Known Spells <span class="header-action">Updated automatically with level</span></h3>
+      </summary>
+      <div class="collapsible-body">
       <input type="search" id="spell-search" class="spell-search-input" placeholder="Filter spells by name…" autocomplete="off">
       <table class="spell-table">
         <thead>
@@ -1942,10 +2467,14 @@ body.dm-mode .dm-hide { display: none; }
           <!-- filled by JS -->
         </tbody>
       </table>
-    </div>
+      </div>
+    </details>
 
-    <div class="card" id="surge-card" style="margin-top: 2rem;" hidden>
+    <details class="card collapsible-card" id="surge-card" style="margin-top: 2rem;" hidden open>
+      <summary>
       <h3>Wild Magic Surge</h3>
+      </summary>
+      <div class="collapsible-body">
       <div class="surge-controls">
         <button class="surge-roll-btn" id="surge-roll-btn" title="Roll 1d100 on the Wild Magic Surge table">↻ Roll Surge</button>
         <div class="surge-result" id="surge-result">no roll yet</div>
@@ -1957,15 +2486,19 @@ body.dm-mode .dm-hide { display: none; }
           <tbody id="surge-tbody"></tbody>
         </table>
       </details>
-    </div>
-  </section>
+      </div>
+    </details>
+  </details>
 
   <!-- FEATURES -->
-  <section class="section">
-    <h2 class="section-title">Features &amp; Inheritances</h2>
+  <details class="section" open>
+    <summary><h2 class="section-title">Features &amp; Inheritances</h2></summary>
     <div class="two-col">
-      <div class="card">
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Aasimar</h3>
+        </summary>
+        <div class="collapsible-body">
         <div id="aasimar-features">
           <div class="feature-block">
             <h4>Darkvision</h4>
@@ -1988,45 +2521,77 @@ body.dm-mode .dm-hide { display: none; }
             <p>Bonus action, transform for 1 minute (or until you end it): two spectral wings sprout from your back, granting a Fly Speed equal to your Speed. Once per turn while transformed, deal extra radiant damage on one hit equal to proficiency bonus (<span id="revelation-bonus">+2</span>). Once per long rest.</p>
           </div>
         </div>
-      </div>
-      <div class="card">
+        </div>
+      </details>
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Class Features</h3>
+        </summary>
+        <div class="collapsible-body">
         <div id="class-features">
           <!-- filled by JS -->
         </div>
-      </div>
+        </div>
+      </details>
     </div>
 
     <!-- ALTERNATES -->
-    <div class="card" style="margin-top: 2rem;" id="alternates-card">
+    <details class="card collapsible-card" style="margin-top: 2rem;" id="alternates-card" open>
+      <summary>
       <h3>Feat &amp; Invocation Choices <span class="header-action">Click to swap alternates</span></h3>
+      </summary>
+      <div class="collapsible-body">
       <div id="alternates-list">
         <!-- filled by JS -->
       </div>
-    </div>
-  </section>
+      </div>
+    </details>
+  </details>
 
   <!-- INVENTORY -->
-  <section class="section">
-    <h2 class="section-title">Carried</h2>
+  <details class="section" open>
+    <summary><h2 class="section-title">Carried</h2></summary>
     <div class="two-col">
-      <div class="card">
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>Armament <button class="header-action" data-add="armament">+ Add Item</button></h3>
+        </summary>
+        <div class="collapsible-body">
         <ul class="inventory-list" id="inv-armament"></ul>
-      </div>
-      <div class="card">
+        </div>
+      </details>
+      <details class="card collapsible-card" open>
+        <summary>
         <h3>On His Person <button class="header-action" data-add="person">+ Add Item</button></h3>
+        </summary>
+        <div class="collapsible-body">
         <ul class="inventory-list" id="inv-person"></ul>
-      </div>
+        </div>
+      </details>
     </div>
-    <div class="card" style="margin-top: 2rem;">
+    <details class="card collapsible-card" id="magic-items-card" style="margin-top: 2rem;" open>
+      <summary>
+      <h3>Magic Items
+        <button class="header-action" id="add-magic-item-btn">+ Add Item</button>
+      </h3>
+      </summary>
+      <div class="collapsible-body">
+        <p class="magic-items-summary" id="magic-items-summary"></p>
+        <div id="magic-items-list"></div>
+      </div>
+    </details>
+    <details class="card collapsible-card" style="margin-top: 2rem;" open>
+      <summary>
       <h3>Coin &amp; Notes</h3>
+      </summary>
+      <div class="collapsible-body">
       <p style="margin-bottom: 1rem; display: flex; align-items: baseline; gap: 0.6rem;"><strong>Coin:</strong>
         <input type="text" id="coin" style="background:transparent;border:none;border-bottom:1px solid var(--gold-tarnish);color:var(--parchment);font-family:inherit;font-size:1rem;padding:0.2rem;outline:none;flex:1;min-width:0;" value="65 gp in mixed coin, including 50 gp from his last booking">
       </p>
       <textarea class="notes-area" id="notes" placeholder="Session notes, NPCs met, leads to follow, things the Choir said..."></textarea>
-    </div>
-  </section>
+      </div>
+    </details>
+  </details>
 
   <!-- QUOTE -->
   <div class="quote">
@@ -2035,10 +2600,13 @@ body.dm-mode .dm-hide { display: none; }
   </div>
 
   <!-- LEVELING PATH -->
-  <section class="section">
-    <h2 class="section-title">The Path Ahead</h2>
-    <div class="card">
+  <details class="section" open>
+    <summary><h2 class="section-title">The Path Ahead</h2></summary>
+    <details class="card collapsible-card" open>
+      <summary>
       <h3>Level-by-Level Outline</h3>
+      </summary>
+      <div class="collapsible-body">
       <table class="level-table">
         <thead>
           <tr><th style="width: 50px;">Lvl</th><th>Class</th><th>Gains</th></tr>
@@ -2047,12 +2615,13 @@ body.dm-mode .dm-hide { display: none; }
           <!-- filled by JS -->
         </tbody>
       </table>
-    </div>
-  </section>
+      </div>
+    </details>
+  </details>
 
   <!-- BACKSTORY -->
-  <section class="section">
-    <h2 class="section-title">The Story</h2>
+  <details class="section" open>
+    <summary><h2 class="section-title">The Story</h2></summary>
     <details class="backstory-details">
       <summary>Show / Hide Backstory</summary>
       <div class="backstory-content">
@@ -2090,7 +2659,7 @@ body.dm-mode .dm-hide { display: none; }
         <p>He is, despite everything, hopeful. He has not stopped hoping. He thinks if he can find the ritual and if his mother is alive and if he can convince her, just for the few minutes it would take, that he is still him under all of this, then he can give her back a son. He understands the odds. He has decided to hope anyway.</p>
       </div>
     </details>
-  </section>
+  </details>
 
   <footer class="footer">
     Recorded in Neverwinter, beneath a sky that does not quite belong to him.
@@ -2104,6 +2673,69 @@ body.dm-mode .dm-hide { display: none; }
 </div>
 
 <div class="cast-popover" id="cast-popover" hidden></div>
+
+<!-- Add/Edit Magic Item modal -->
+<div class="modal-overlay" id="magic-item-overlay" hidden>
+  <div class="modal">
+    <button class="modal-close" id="magic-item-close" aria-label="Close">×</button>
+    <div class="modal-title" id="magic-item-title">Add Magic Item</div>
+    <div class="modal-subtitle">Track found / awarded magic items, attunement, and charges.</div>
+    <div class="modal-detail-prompts">
+      <div class="modal-prompt">
+        <div class="magic-item-form">
+          <label class="mi-field mi-field-full">
+            <span class="mi-label">Name</span>
+            <input type="text" id="mi-name" placeholder="e.g., Pendant of the Hollow Choir">
+          </label>
+          <label class="mi-field">
+            <span class="mi-label">Type</span>
+            <input type="text" id="mi-type" placeholder="Wondrous Item, Weapon, etc.">
+          </label>
+          <label class="mi-field">
+            <span class="mi-label">Rarity</span>
+            <select id="mi-rarity">
+              <option value="Common">Common</option>
+              <option value="Uncommon" selected>Uncommon</option>
+              <option value="Rare">Rare</option>
+              <option value="Very Rare">Very Rare</option>
+              <option value="Legendary">Legendary</option>
+              <option value="Artifact">Artifact</option>
+            </select>
+          </label>
+          <label class="mi-field mi-field-inline">
+            <input type="checkbox" id="mi-attunement">
+            <span class="mi-label">Requires Attunement</span>
+          </label>
+          <label class="mi-field">
+            <span class="mi-label">Charges (max)</span>
+            <input type="number" id="mi-charges-max" min="0" max="50" value="0">
+          </label>
+          <label class="mi-field mi-field-full">
+            <span class="mi-label">Notes</span>
+            <textarea id="mi-notes" rows="3" placeholder="Effect, recharge condition, anything you want to remember."></textarea>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="magic-item-delete" hidden>Delete</button>
+      <button class="modal-confirm" id="magic-item-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic confirmation modal (porting from Rivet) -->
+<div class="modal-overlay" id="confirm-overlay" hidden>
+  <div class="modal confirm-modal">
+    <button class="modal-close" id="confirm-close" aria-label="Close">×</button>
+    <div class="modal-title" id="confirm-title">Confirm</div>
+    <div class="confirm-body" id="confirm-body"></div>
+    <div class="modal-actions confirm-actions">
+      <button class="modal-cancel" id="confirm-cancel">Cancel</button>
+      <button class="modal-confirm" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ============================================================
@@ -2368,7 +3000,10 @@ const DEFAULT_STATE = {
   exhaustion: 0,              // 0-6 (2024 exhaustion levels)
   heroicInspiration: false,   // 2024 PHB universal mechanic; advantage on one d20 roll
   tidesOfChaosUsed: false,    // Wild Magic sorc 3 feature; resets on long rest OR DM-triggered surge
-  lastSurgeRoll: null         // 1-100 of the last Wild Magic Surge roll, persists for DM visibility
+  lastSurgeRoll: null,        // 1-100 of the last Wild Magic Surge roll, persists for DM visibility
+  // Found magic items (loot/awards). Each: { id, name, type, rarity,
+  // attunement (bool), attuned (bool), chargesMax, chargesUsed, notes }
+  magicItems: []
 };
 
 let state = loadState();
@@ -2563,6 +3198,16 @@ function computeHP(level, stats) {
   return Math.max(1, hp);
 }
 
+function hpFormulaText(level, stats) {
+  const { w, s } = classBreakdown(level);
+  const conMod = mod(stats.con);
+  const parts = ['max die L1 (8)'];
+  if (w >= 2) parts.push(`${w - 1}×Warlock avg+1 (6)`);
+  if (s >= 1) parts.push(`${s}×Sorcerer avg+1 (5)`);
+  parts.push(`${conMod * (w + s)} CON`);
+  return parts.join(' + ');
+}
+
 function hasSaveProf(stat, level) {
   // Warlock saves: WIS + CHA
   if (stat === 'wis' || stat === 'cha') return true;
@@ -2603,6 +3248,10 @@ function render() {
   // Title bar
   document.getElementById('title-classes').textContent = classString(level);
   document.getElementById('level-display').textContent = level;
+  const upBtn = document.getElementById('level-up-btn');
+  if (upBtn) upBtn.disabled = level >= 20;
+  const downBtn = document.getElementById('level-down-btn');
+  if (downBtn) downBtn.disabled = level <= 1;
 
   // Stats
   for (const stat of ['str','dex','con','int','wis','cha']) {
@@ -2643,8 +3292,7 @@ function render() {
   } else {
     document.getElementById('hp-current').value = Math.min(state.hpCurrent, hp);
   }
-  document.getElementById('hp-formula').textContent =
-    `${w > 0 ? `${w}d8` : ''}${w > 0 && s > 0 ? ' + ' : ''}${s > 0 ? `${s}d6` : ''} + ${mod(stats.con) * (w + s)} CON`;
+  // (HP formula is now reachable via the ⓘ button on the Hit Points cell.)
 
   // Temp HP + Inspiring Leader button (only visible once the feat is taken)
   document.getElementById('temp-hp').value = state.tempHp || 0;
@@ -2756,7 +3404,163 @@ function render() {
   renderDeathSaves(hp);
   renderConditions();
   renderSurge(level);
+  renderMagicItemsCard();
 }
+
+function attunementMax(_level) { return 3; }
+function totalAttunedCount() {
+  return (state.magicItems || []).filter(mi => mi.attuned).length;
+}
+function renderMagicItemsCard() {
+  const items = state.magicItems || [];
+  const attuneMax = attunementMax(state.level);
+  const totalAttuned = totalAttunedCount();
+  document.getElementById('magic-items-summary').innerHTML =
+    items.length === 0
+      ? `No found items yet. Use <strong>+ Add Item</strong> for loot, awards, or curios.`
+      : `${items.length} item${items.length > 1 ? 's' : ''} · <strong style="color:var(--gold);">${totalAttuned} / ${attuneMax} attuned</strong>`;
+
+  const list = document.getElementById('magic-items-list');
+  list.innerHTML = '';
+  for (const item of items) {
+    const row = document.createElement('div');
+    row.className = 'magic-item-row';
+    const attuneTag = item.attunement
+      ? `<span class="attune-tag${item.attuned ? ' attune-tag-on' : ''}">${item.attuned ? 'Attuned' : 'Attune'}</span>`
+      : '';
+    const attuneBtn = item.attunement
+      ? `<button class="mi-attune-toggle${item.attuned ? ' on' : ''}" data-toggle-attune="${item.id}" title="${item.attuned ? 'Drop attunement' : 'Attune to this item'}">${item.attuned ? 'Attuned' : 'Attune'}</button>`
+      : '';
+    let chargesHTML = '';
+    if (item.chargesMax && item.chargesMax > 0) {
+      const used = Math.min(item.chargesUsed || 0, item.chargesMax);
+      let pips = '';
+      for (let i = 0; i < item.chargesMax; i++) {
+        pips += `<div class="pip${i >= item.chargesMax - used ? ' used' : ''}" data-charge-idx="${i}" data-item-id="${item.id}" title="Charge ${i + 1}"></div>`;
+      }
+      chargesHTML = `<div class="mi-charge-pips" data-item-id="${item.id}">${pips}</div>`;
+    }
+    row.innerHTML = `
+      <div>
+        <div class="mi-name">${item.name}<span class="rarity-tag">${item.rarity}</span>${attuneTag}</div>
+        <div class="mi-row-meta">${item.type || ''}</div>
+      </div>
+      <div class="mi-row-controls">
+        ${attuneBtn}
+        ${chargesHTML}
+        <button class="mi-edit-btn" data-edit-item="${item.id}">Edit</button>
+      </div>
+      ${item.notes ? `<div class="mi-row-notes">${item.notes.replace(/[<>]/g, c => ({'<':'&lt;','>':'&gt;'}[c]))}</div>` : ''}
+    `;
+    list.appendChild(row);
+  }
+  list.querySelectorAll('[data-toggle-attune]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.toggleAttune;
+      const item = (state.magicItems || []).find(x => x.id === id);
+      if (!item) return;
+      if (!item.attuned) {
+        if (totalAttunedCount() >= attuneMax) {
+          showInfo('Attunement Cap', `<p>Attunement cap reached: ${attuneMax} of ${attuneMax}. Drop one to attune to a new item.</p>`);
+          return;
+        }
+        item.attuned = true;
+      } else {
+        item.attuned = false;
+      }
+      saveState();
+      render();
+    });
+  });
+  list.querySelectorAll('.mi-charge-pips .pip').forEach(pip => {
+    pip.addEventListener('click', () => {
+      const id = pip.dataset.itemId;
+      const idx = parseInt(pip.dataset.chargeIdx, 10);
+      const item = (state.magicItems || []).find(x => x.id === id);
+      if (!item) return;
+      const max = item.chargesMax;
+      const used = item.chargesUsed || 0;
+      const isAvailable = idx < (max - used);
+      item.chargesUsed = isAvailable ? (max - idx) : (max - idx - 1);
+      saveState();
+      render();
+    });
+  });
+  list.querySelectorAll('[data-edit-item]').forEach(btn => {
+    btn.addEventListener('click', () => openMagicItemModal(btn.dataset.editItem));
+  });
+}
+
+// Add/Edit Magic Item modal
+let _editingMagicItemId = null;
+function openMagicItemModal(id) {
+  _editingMagicItemId = id || null;
+  const existing = id ? (state.magicItems || []).find(x => x.id === id) : null;
+  document.getElementById('magic-item-title').textContent = existing ? 'Edit Magic Item' : 'Add Magic Item';
+  document.getElementById('mi-name').value = existing ? existing.name : '';
+  document.getElementById('mi-type').value = existing ? (existing.type || '') : '';
+  document.getElementById('mi-rarity').value = existing ? existing.rarity : 'Uncommon';
+  document.getElementById('mi-attunement').checked = existing ? !!existing.attunement : false;
+  document.getElementById('mi-charges-max').value = existing ? (existing.chargesMax || 0) : 0;
+  document.getElementById('mi-notes').value = existing ? (existing.notes || '') : '';
+  document.getElementById('magic-item-delete').hidden = !existing;
+  document.getElementById('magic-item-overlay').hidden = false;
+  setTimeout(() => document.getElementById('mi-name').focus(), 50);
+}
+function closeMagicItemModal() {
+  document.getElementById('magic-item-overlay').hidden = true;
+  _editingMagicItemId = null;
+}
+function saveMagicItem() {
+  const name = document.getElementById('mi-name').value.trim();
+  if (!name) { showInfo('Name required', '<p>Magic items must have a name.</p>'); return; }
+  const item = {
+    id: _editingMagicItemId || ('mi-' + Date.now() + '-' + Math.floor(Math.random() * 1e4)),
+    name,
+    type: document.getElementById('mi-type').value.trim(),
+    rarity: document.getElementById('mi-rarity').value,
+    attunement: document.getElementById('mi-attunement').checked,
+    chargesMax: parseInt(document.getElementById('mi-charges-max').value, 10) || 0,
+    notes: document.getElementById('mi-notes').value.trim()
+  };
+  if (_editingMagicItemId) {
+    const list = state.magicItems || [];
+    const idx = list.findIndex(x => x.id === _editingMagicItemId);
+    if (idx >= 0) {
+      item.attuned = list[idx].attuned && item.attunement;
+      item.chargesUsed = Math.min(list[idx].chargesUsed || 0, item.chargesMax);
+      list[idx] = item;
+    }
+  } else {
+    item.attuned = false;
+    item.chargesUsed = 0;
+    state.magicItems = [...(state.magicItems || []), item];
+  }
+  saveState();
+  closeMagicItemModal();
+  render();
+}
+function deleteMagicItem() {
+  if (!_editingMagicItemId) return;
+  const id = _editingMagicItemId;
+  showConfirm('Delete this magic item?', '<p>This removes it permanently from the sheet.</p>', () => {
+    state.magicItems = (state.magicItems || []).filter(x => x.id !== id);
+    saveState();
+    closeMagicItemModal();
+    render();
+  }, { okLabel: 'Delete' });
+}
+
+document.getElementById('add-magic-item-btn').addEventListener('click', (e) => {
+  e.preventDefault();
+  openMagicItemModal(null);
+});
+document.getElementById('magic-item-close').addEventListener('click', closeMagicItemModal);
+document.getElementById('magic-item-save').addEventListener('click', saveMagicItem);
+document.getElementById('magic-item-delete').addEventListener('click', deleteMagicItem);
+document.getElementById('magic-item-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'magic-item-overlay') closeMagicItemModal();
+});
 
 function renderSurge(level) {
   const card = document.getElementById('surge-card');
@@ -3009,6 +3813,23 @@ function renderDeathSaves(maxHp) {
 
 const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious'];
 
+const CONDITION_DESCRIPTIONS = {
+  blinded:       'Can\'t see. Auto-fail any ability check requiring sight. Attack rolls vs you have Advantage; your attack rolls have Disadvantage.',
+  charmed:       'Can\'t attack the charmer or target them with harmful abilities. Charmer has Advantage on social checks against you.',
+  deafened:      'Can\'t hear. Auto-fail any ability check requiring hearing.',
+  frightened:    'Disadvantage on ability checks and attack rolls while you can see the source. Can\'t willingly move closer to the source.',
+  grappled:      'Speed is 0. Ends if the grappler is Incapacitated, or if you\'re moved away by an effect.',
+  incapacitated: 'Can\'t take Actions, Bonus Actions, or Reactions. Concentration breaks. Speed is 0. Auto-fail Initiative.',
+  invisible:     'Concealed from sight: heavily obscured for hiding. Attack rolls vs you have Disadvantage; your attack rolls have Advantage.',
+  paralyzed:     'Incapacitated + can\'t speak. Auto-fail STR and DEX saves. Attacks vs you have Advantage. Melee hits within 5 ft are crits.',
+  petrified:     'Transformed into solid inanimate substance. Incapacitated. Resistance to all damage. Immune to poison, disease. Aging halts.',
+  poisoned:      'Disadvantage on attack rolls and ability checks.',
+  prone:         'Disadvantage on attack rolls. Attackers within 5 ft have Advantage; attackers farther than 5 ft have Disadvantage. Movement costs double to crawl.',
+  restrained:    'Speed is 0. Disadvantage on attack rolls and DEX saves. Attacks vs you have Advantage.',
+  stunned:       'Incapacitated. Can\'t move. Auto-fail STR and DEX saves. Attacks vs you have Advantage.',
+  unconscious:   'Incapacitated + Prone. Drop everything held. Auto-fail STR and DEX saves. Attacks vs you have Advantage. Melee hits within 5 ft are crits.'
+};
+
 function renderConditions() {
   const container = document.getElementById('conditions-pills');
   container.innerHTML = '';
@@ -3017,14 +3838,18 @@ function renderConditions() {
     const pill = document.createElement('button');
     pill.className = 'condition-pill' + (state.conditions[key] ? ' active' : '');
     pill.textContent = name;
+    pill.title = CONDITION_DESCRIPTIONS[key] || '';
     pill.addEventListener('click', () => {
       state.conditions[key] = !state.conditions[key];
       saveState();
-      render(); // condition flips can change Speed and other displayed stats
+      render();
     });
     container.appendChild(pill);
   }
   document.getElementById('exhaustion-level').value = state.exhaustion || 0;
+  const anyActive = Object.values(state.conditions || {}).some(v => v);
+  const clearBtn = document.getElementById('conditions-clear');
+  if (clearBtn) clearBtn.hidden = !anyActive && (state.exhaustion || 0) === 0;
 }
 
 function renderConcentrationOptions(level) {
@@ -3129,7 +3954,8 @@ function renderSpells(level) {
         const titleAttr = anyAvailable ? 'Click to cast' : 'No slots available at or above this spell\'s level';
         levelCell = `<button class="${classes}" data-spell="${spell.name}" title="${titleAttr}">${spell.level}</button>`;
       }
-      tr.innerHTML = `<td>${levelCell}</td><td class="spell-name">${spell.name}</td><td class="spell-source">${spell.notes}</td>`;
+      const concTag = spell.concentration ? '<span class="conc-tag-inline">C</span>' : '';
+      tr.innerHTML = `<td>${levelCell}</td><td class="spell-name"><button class="spell-info-btn" data-spell="${spell.name}" title="Spell details">${spell.name}${concTag}</button></td><td class="spell-source">${spell.class || ''}</td>`;
       const btn = tr.querySelector('.cast-btn');
       if (btn) {
         btn.addEventListener('click', (e) => {
@@ -3137,11 +3963,15 @@ function renderSpells(level) {
           openCastPopover(spell, btn);
         });
       }
+      const infoBtn = tr.querySelector('.spell-info-btn');
+      if (infoBtn) {
+        infoBtn.addEventListener('click', () => showSpellInfo(spell));
+      }
       tbody.appendChild(tr);
     } else if (spell.gained === nextLevel) {
       const tr = document.createElement('tr');
       tr.className = 'preview';
-      tr.innerHTML = `<td><span class="level-tag">${spell.level}</span></td><td class="spell-name">${spell.name}<span class="preview-tag">Next Level</span></td><td class="spell-source">${spell.notes}</td>`;
+      tr.innerHTML = `<td><span class="level-tag">${spell.level}</span></td><td class="spell-name">${spell.name}<span class="preview-tag">Next Level</span></td><td class="spell-source">${spell.class || ''}</td>`;
       tbody.appendChild(tr);
     }
   }
@@ -3244,6 +4074,48 @@ function closeOnOutsideClick(e) {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeCastPopover();
+});
+
+// ============================================================
+// Styled confirm / info modal helpers (ported from Rivet)
+// ============================================================
+let _confirmCallback = null;
+function showConfirm(title, bodyHTML, onConfirm, opts = {}) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-body').innerHTML = bodyHTML;
+  document.getElementById('confirm-ok').textContent = opts.okLabel || 'Confirm';
+  document.getElementById('confirm-cancel').textContent = opts.cancelLabel || 'Cancel';
+  document.getElementById('confirm-cancel').hidden = !!opts.infoOnly;
+  _confirmCallback = onConfirm;
+  document.getElementById('confirm-overlay').hidden = false;
+}
+function showInfo(title, bodyHTML) {
+  showConfirm(title, bodyHTML, null, { okLabel: 'Close', infoOnly: true });
+}
+function showSpellInfo(spell) {
+  // Caelen's spell shape uses {name, level, class, gained, notes, concentration?}
+  const subtitle = `${spell.level} · ${spell.class || ''}${spell.concentration ? ' · Concentration' : ''}`;
+  const notesBlock = spell.notes
+    ? `<p style="font-family:'EB Garamond',serif; font-size:0.95rem; color:var(--parchment); line-height:1.5; margin:0;">${spell.notes}</p>`
+    : '';
+  showInfo(spell.name, `<div class="spell-info-subtitle">${subtitle}</div>${notesBlock}`);
+}
+function closeConfirmModal() {
+  document.getElementById('confirm-overlay').hidden = true;
+  _confirmCallback = null;
+}
+document.getElementById('confirm-ok').addEventListener('click', () => {
+  const cb = _confirmCallback;
+  closeConfirmModal();
+  if (cb) cb();
+});
+document.getElementById('confirm-close').addEventListener('click', closeConfirmModal);
+document.getElementById('confirm-cancel').addEventListener('click', closeConfirmModal);
+document.getElementById('confirm-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'confirm-overlay') closeConfirmModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('confirm-overlay').hidden) closeConfirmModal();
 });
 
 function renderClassFeatures(level) {
@@ -3379,11 +4251,26 @@ function autoSizeTextarea(el) {
 // EVENT WIRING
 // ============================================================
 
-document.getElementById('level-slider').addEventListener('input', (e) => {
-  state.level = parseInt(e.target.value, 10);
+// Level Up / Level Down — replaces the old slider.
+function levelUp() {
+  if ((state.level || 1) >= 20) return;
+  state.level = (state.level || 1) + 1;
   state.hpCurrent = null; // Reset to max on level change
   saveState();
   render();
+}
+function levelDown() {
+  if ((state.level || 1) <= 1) return;
+  state.level = (state.level || 1) - 1;
+  state.hpCurrent = null;
+  saveState();
+  render();
+}
+document.getElementById('level-up-btn').addEventListener('click', levelUp);
+document.getElementById('level-down-btn').addEventListener('click', () => {
+  document.getElementById('options-dropdown').hidden = true;
+  document.removeEventListener('click', closeOptionsOnOutside);
+  levelDown();
 });
 
 document.getElementById('hp-current').addEventListener('input', (e) => {
@@ -3404,6 +4291,18 @@ document.getElementById('temp-hp').addEventListener('input', (e) => {
   const v = parseInt(e.target.value, 10);
   state.tempHp = isNaN(v) || v < 0 ? 0 : v;
   saveState();
+});
+
+document.getElementById('hp-info-btn').addEventListener('click', () => {
+  const level = state.level;
+  const stats = computeStats(level);
+  const formula = hpFormulaText(level, stats);
+  const max = computeHP(level, stats);
+  showInfo('Hit Point Formula',
+    `<div class="spell-info-subtitle">Max HP at character level ${level}: ${max}</div>` +
+    `<p style="font-family:'EB Garamond',serif; font-size:0.95rem; color:var(--parchment); line-height:1.5; margin:0;">${formula}</p>` +
+    `<p style="font-family:'EB Garamond',serif; font-size:0.85rem; color:var(--parchment-aged); font-style:italic; line-height:1.5; margin-top:0.8rem;">L1 is always the max die (8). Warlock levels add avg+1 from d8 (6). Sorcerer levels add avg+1 from d6 (5). CON modifier is added once per level.</p>`
+  );
 });
 
 document.getElementById('inspiring-btn').addEventListener('click', () => {
@@ -3471,6 +4370,18 @@ document.getElementById('exhaustion-level').addEventListener('input', (e) => {
   state.exhaustion = isNaN(v) || v < 0 ? 0 : Math.min(6, v);
   saveState();
   render(); // exhaustion penalty changes Initiative, attacks, saves, skills
+});
+
+document.getElementById('conditions-clear').addEventListener('click', () => {
+  showConfirm('Clear all conditions and exhaustion?',
+    '<p>This will reset every active condition pill and set exhaustion to 0.</p>',
+    () => {
+      state.conditions = {};
+      state.exhaustion = 0;
+      saveState();
+      render();
+    },
+    { okLabel: 'Clear All' });
 });
 
 // Spell search: filter visible rows by name. Transient, not persisted to state.
@@ -3541,6 +4452,13 @@ document.querySelectorAll('[data-add]').forEach(btn => {
   });
 });
 
+// Buttons inside <summary> elements shouldn't toggle their parent <details>
+document.addEventListener('click', (e) => {
+  if (e.target.closest('summary') && e.target.closest('button')) {
+    e.preventDefault();
+  }
+});
+
 // Options dropdown (Export / Import / Reset)
 document.getElementById('options-toggle').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -3587,42 +4505,63 @@ document.getElementById('import-file').addEventListener('change', (e) => {
   reader.onload = () => {
     let parsed;
     try { parsed = JSON.parse(reader.result); }
-    catch (err) { alert('Could not parse that file as JSON.'); return; }
+    catch (err) { showInfo('Import failed', '<p>Could not parse that file as JSON.</p>'); return; }
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      alert('That file does not look like a character sheet backup.');
+      showInfo('Import failed', '<p>That file does not look like a character sheet backup.</p>');
       return;
     }
-    if (parsed.schemaVersion && parsed.schemaVersion > DEFAULT_STATE.schemaVersion) {
-      if (!confirm(`This backup is schema v${parsed.schemaVersion} but this sheet only knows v${DEFAULT_STATE.schemaVersion}. Import anyway?`)) return;
+    const applyImport = () => {
+      const { _exportedAt, _app, ...incoming } = parsed;
+      state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...incoming };
+      state.updatedAt = new Date().toISOString();
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (err) { console.error('Save failed', err); }
+      (() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
+      render();
+      showSaveIndicator();
+      syncToCloud();
+    };
+    const schemaOk = !(parsed.schemaVersion && parsed.schemaVersion > DEFAULT_STATE.schemaVersion);
+    const doImport = () => showConfirm(
+      'Import this backup?',
+      '<p>This will <strong>overwrite the current sheet</strong> with the imported data. Your current state will be replaced.</p>',
+      applyImport,
+      { okLabel: 'Import' }
+    );
+    if (!schemaOk) {
+      showConfirm(
+        'Schema mismatch',
+        `<p>This backup is schema v${parsed.schemaVersion} but this sheet only knows v${DEFAULT_STATE.schemaVersion}.</p><div class="confirm-note">Import anyway? Some fields may not load correctly.</div>`,
+        doImport,
+        { okLabel: 'Import anyway' }
+      );
+    } else {
+      doImport();
     }
-    if (!confirm('Replace the current sheet with the imported data? Your current sheet will be overwritten.')) return;
-    // Strip export-only metadata, then merge over defaults for forward compat.
-    const { _exportedAt, _app, ...incoming } = parsed;
-    state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...incoming };
-    state.updatedAt = new Date().toISOString();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (err) { console.error('Save failed', err); }
-    document.getElementById('level-slider').value = state.level;
-    render();
-    showSaveIndicator();
-    syncToCloud();
   };
-  reader.onerror = () => alert('Could not read that file.');
+  reader.onerror = () => showInfo('Read error', '<p>Could not read that file.</p>');
   reader.readAsText(file);
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  if (confirm('Reset the entire sheet to defaults? All your edits, level, inventory, and notes will be lost.')) {
-    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-    state.updatedAt = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    document.getElementById('level-slider').value = state.level;
-    render();
-    syncToCloud(); // propagate reset to cloud, otherwise next page load would re-pull the old cloud state
-  }
+  showConfirm(
+    'Reset Sheet?',
+    `<p>This will erase the entire sheet and return everything to defaults:</p>
+     <ul><li>All your edits, level, and choices</li><li>Inventory and notes</li><li>Combat resources and concentration</li></ul>
+     <div class="confirm-note">This cannot be undone.</div>`,
+    () => {
+      state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      state.updatedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      (() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
+      render();
+      syncToCloud();
+    },
+    { okLabel: 'Reset' }
+  );
 });
 
 // Sync slider to loaded level
-document.getElementById('level-slider').value = state.level;
+(() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
 
 // Initial render
 render();
@@ -3644,7 +4583,7 @@ render();
       if (remoteTime > localTime) {
         state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...remote.data };
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-        document.getElementById('level-slider').value = state.level;
+        (() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
         render();
         setLoadedFrom('cloud');
       } else {
@@ -3680,7 +4619,7 @@ if (IS_DM) {
       const localTime = state.updatedAt ? new Date(state.updatedAt).getTime() : 0;
       if (remoteTime > localTime) {
         state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...remote.data };
-        document.getElementById('level-slider').value = state.level;
+        (() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
         render();
         setCloudStatus('synced', 'Cloud: live');
       }
