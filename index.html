@@ -271,6 +271,7 @@ body::before {
 .options-menu {
   position: relative;
   margin-left: auto;
+  z-index: 2000;
 }
 .options-btn {
   font-family: 'Cinzel', serif;
@@ -299,8 +300,8 @@ body::before {
   padding: 0.7rem;
   background: var(--ink-deep);
   border: 1px solid var(--gold);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.7);
-  z-index: 300;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7);
+  z-index: 2001;
   min-width: 160px;
 }
 .options-dropdown[hidden] { display: none; }
@@ -1182,31 +1183,35 @@ body::before {
 .spell-search-input:focus { border-bottom-color: var(--gold); }
 .spell-search-input::placeholder { color: var(--parchment-dim); font-style: italic; }
 
-/* Spell row: name + source on left, cast button on the right (Rivet-style) */
-.spell-table td.spell-name {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+/* Spell row: name on left, source (small) middle, cast button right */
+.spell-table td.spell-name-cell {
+  vertical-align: middle;
+  font-family: 'EB Garamond', serif;
+  font-size: 1.02rem;
+  color: var(--parchment);
 }
-.spell-table td.spell-name .spell-info-btn {
+.spell-table td.spell-name-cell .spell-info-btn {
   background: transparent;
   border: none;
   color: var(--parchment);
-  font-family: 'EB Garamond', serif;
-  font-size: 1rem;
+  font-family: inherit;
+  font-size: inherit;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
   padding: 0;
   transition: color 0.15s;
 }
-.spell-table td.spell-name .spell-info-btn:hover { color: var(--gold-bright); }
-.spell-table td.spell-name .spell-source {
-  display: block;
-  font-family: 'EB Garamond', serif;
-  font-size: 0.78rem;
-  font-style: italic;
-  color: var(--parchment-aged);
+.spell-table td.spell-name-cell .spell-info-btn:hover { color: var(--gold-bright); }
+.spell-table td.spell-source-cell {
+  vertical-align: middle;
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-tarnish);
+  white-space: nowrap;
+  width: 110px;
 }
 .spell-table td.spell-action-cell {
   vertical-align: middle;
@@ -2094,6 +2099,7 @@ body.dm-mode .mi-charge-pips .pip {
 body.dm-mode .reset-btn,
 body.dm-mode .io-btn,
 body.dm-mode .options-menu,
+body.dm-mode .level-up-btn,
 body.dm-mode .header-action[data-add],
 body.dm-mode .header-action,
 body.dm-mode .inv-remove,
@@ -4331,13 +4337,17 @@ const SPELL_LEVEL_ORDER = { 'Cantrip': 0, '1st': 1, '2nd': 2, '3rd': 3, '4th': 4
 function renderSpells(level) {
   const tbody = document.getElementById('spells-tbody');
   tbody.innerHTML = '';
+  const nextLevel = level + 1;
+  // Sort by level → known-before-preview → name, so previews always sit at
+  // the bottom of their own level group.
   const sorted = [...SPELLS].sort((a, b) => {
     const al = SPELL_LEVEL_ORDER[a.level], bl = SPELL_LEVEL_ORDER[b.level];
     if (al !== bl) return al - bl;
+    const aIsPrev = a.gained === nextLevel ? 1 : 0;
+    const bIsPrev = b.gained === nextLevel ? 1 : 0;
+    if (aIsPrev !== bIsPrev) return aIsPrev - bIsPrev;
     return a.name.localeCompare(b.name);
   });
-
-  const nextLevel = level + 1;
   let currentGroup = null;
   for (const spell of sorted) {
     const isKnown = spell.gained <= level;
@@ -4350,7 +4360,7 @@ function renderSpells(level) {
       const headerTr = document.createElement('tr');
       headerTr.className = 'spell-level-header';
       const label = spell.level === 'Cantrip' ? 'Cantrips' : `Level ${SPELL_LEVEL_ORDER[spell.level]}`;
-      headerTr.innerHTML = `<td colspan="2">${label}</td>`;
+      headerTr.innerHTML = `<td colspan="3">${label}</td>`;
       tbody.appendChild(headerTr);
     }
 
@@ -4370,10 +4380,8 @@ function renderSpells(level) {
       }
 
       tr.innerHTML = `
-        <td class="spell-name">
-          <button class="spell-info-btn" data-spell="${spell.name}" title="Spell details">${spell.name}${concTag}</button>
-          <span class="spell-source">${spell.class || ''}</span>
-        </td>
+        <td class="spell-name-cell"><button class="spell-info-btn" data-spell="${spell.name}" title="Spell details">${spell.name}${concTag}</button></td>
+        <td class="spell-source-cell">${spell.class || ''}</td>
         <td class="spell-action-cell">${castCell}</td>
       `;
       const btn = tr.querySelector('.cast-btn');
@@ -4393,10 +4401,8 @@ function renderSpells(level) {
       const tr = document.createElement('tr');
       tr.className = 'preview';
       tr.innerHTML = `
-        <td class="spell-name">
-          ${spell.name}<span class="preview-tag">Next Level</span>
-          <span class="spell-source">${spell.class || ''}</span>
-        </td>
+        <td class="spell-name-cell">${spell.name}<span class="preview-tag">Next Level</span></td>
+        <td class="spell-source-cell">${spell.class || ''}</td>
         <td class="spell-action-cell"></td>
       `;
       tbody.appendChild(tr);
