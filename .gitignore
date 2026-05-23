@@ -7,3 +7,6 @@ node_modules/
 .netlify/
 dist/
 build/
+
+# Local reference files (not deployed)
+warlock_sorcerer_spells.txt

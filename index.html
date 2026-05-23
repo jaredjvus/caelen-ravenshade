@@ -693,6 +693,16 @@ body::before {
 .resource-pips {
   display: flex;
   gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.resource-label .resource-meta {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--gold-tarnish);
+  font-size: 0.8em;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-left: 0.3rem;
 }
 .resource-toggle {
   font-family: 'Cinzel', serif;
@@ -1446,6 +1456,23 @@ body::before {
   font-size: 0.98rem;
   color: var(--parchment);
 }
+.spell-info-para {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.95rem;
+  color: var(--parchment);
+  line-height: 1.55;
+  margin: 0.9rem 0 0;
+}
+.spell-info-upgrade {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.88rem;
+  color: var(--parchment-aged);
+  font-style: italic;
+  line-height: 1.5;
+  margin-top: 1rem;
+  padding-top: 0.7rem;
+  border-top: 1px dotted var(--gold-tarnish);
+}
 
 /* Magic Items card */
 .magic-items-summary {
@@ -1622,6 +1649,19 @@ body::before {
 }
 
 .spell-name { color: var(--parchment); font-weight: 500; }
+
+/* Level group dividers in the spell table */
+.spell-level-header td {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-tarnish);
+  padding: 1rem 0.5rem 0.3rem;
+  border-bottom: 1px dotted var(--gold-tarnish);
+  background: transparent;
+}
+.spell-level-header:first-child td { padding-top: 0.4rem; }
 .spell-source { color: var(--parchment-aged); font-style: italic; font-size: 0.85rem; }
 
 /* SLOTS */
@@ -2413,6 +2453,14 @@ body.dm-mode .dm-hide { display: none; }
         <span class="resource-label has-tip" title="Spend Heroic Inspiration to gain advantage on one d20 roll (or reroll a d20 once and use either result). You can only have one Inspiration at a time. Awarded by the DM, some races (Human Resourceful), feats, and class features.">Heroic Inspiration</span>
         <button class="resource-toggle" id="inspiration-toggle">None</button>
       </div>
+      <div class="resource-row" id="resource-hd-warlock" hidden>
+        <span class="resource-label has-tip" title="Spend a Warlock Hit Die (d8) on a short rest to heal HD + CON mod HP. Long rest restores up to half character level total Hit Dice (min 1).">Hit Dice <span class="resource-meta">(d8 · Warlock)</span></span>
+        <div class="resource-pips" id="hd-warlock-pips"></div>
+      </div>
+      <div class="resource-row" id="resource-hd-sorcerer" hidden>
+        <span class="resource-label has-tip" title="Spend a Sorcerer Hit Die (d6) on a short rest to heal HD + CON mod HP.">Hit Dice <span class="resource-meta">(d6 · Sorcerer)</span></span>
+        <div class="resource-pips" id="hd-sorcerer-pips"></div>
+      </div>
       <div class="resource-row" id="resource-sp" hidden>
         <span class="resource-label">Sorcery Points</span>
         <div class="resource-value">
@@ -2835,18 +2883,18 @@ const SPELLS = [
   { name: 'Mind Sliver', level: 'Cantrip', class: 'Warlock', gained: 4, notes: '1d6 psychic; target has −1d4 on its next save before end of your next turn.' },
   { name: 'Mage Hand', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Spectral floating hand. 30 ft range.' },
   { name: 'Minor Illusion', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Sound or image, 1 minute.' },
-  { name: 'Mold Earth', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Excavate or shape stone/earth in a 5-ft cube.' },
-  { name: 'Shape Water', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Manipulate up to 5 ft cube of water.' },
+  { name: 'Elementalism', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Manipulate earth, water, fire, or air — minor elemental tricks. 2024 PHB consolidation of the old elemental cantrips.' },
+  { name: 'Thunderclap', level: 'Cantrip', class: 'Sorcerer', gained: 5, notes: 'Self (5-ft radius). 1d6 thunder, CON save half. Audible up to 100 ft. Scales with character level.' },
   { name: 'Sorcerous Burst', level: 'Cantrip', class: 'Sorcerer', gained: 8, notes: '1d8 force; chains an additional d8 on each max roll.' },
   { name: 'Message', level: 'Cantrip', class: 'Sorcerer', gained: 14, notes: 'Whispered telepathic message + reply, 120 ft.' },
   // 1st level
   { name: 'Hex', level: '1st', class: 'Warlock', gained: 1, concentration: true, notes: 'Bonus action. 1d6 necrotic on hits. Moves to new target when current drops.' },
-  { name: 'Hideous Laughter', level: '1st', class: 'Warlock', gained: 1, concentration: true, notes: 'WIS save, target prone and incapacitated on fail.' },
+  { name: "Tasha's Hideous Laughter", level: '1st', class: 'Warlock', gained: 1, concentration: true, notes: 'WIS save, target prone and incapacitated on fail.' },
   { name: 'Find Familiar', level: '1st', class: 'Pact of the Chain', gained: 3, notes: 'Summons Vex, an imp.' },
   { name: 'Shield', level: '1st', class: 'Hexblade', gained: 1, notes: '+5 AC reaction, no damage from Magic Missile.' },
   { name: 'Magic Missile', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Three force darts, auto-hit, 1d4+1 each.' },
-  { name: 'Silvery Barbs', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Reaction: force reroll of successful attack/save/check, give ally advantage.' },
-  { name: 'Absorb Elements', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Reaction: resistance to triggering element until next turn.' },
+  { name: 'Bane', level: '1st', class: 'Warlock', gained: 5, concentration: true, notes: 'Up to 3 targets within 30 ft, CHA save or -1d4 to attacks and saves for 1 min. Boosts every control spell.' },
+  { name: 'Hellish Rebuke', level: '1st', class: 'Warlock', gained: 5, notes: 'Reaction after taking damage: 2d10 fire on the attacker (DEX save half). Upcastable for +1d10 per slot.' },
   // 2nd level
   { name: 'Mirror Image', level: '2nd', class: 'Warlock', gained: 5, notes: 'Three duplicates, attackers may hit a duplicate instead.' },
   { name: 'Misty Step', level: '2nd', class: 'Sorcerer', gained: 7, notes: 'Bonus action teleport 30 ft.' },
@@ -2873,6 +2921,282 @@ const SPELLS = [
   // 9th
   { name: 'Mind Blank', level: '8th', class: 'Sorcerer', gained: 20, notes: 'Target is immune to charm, fear, possession, divination, and psychic damage for 8 hours.' }
 ];
+
+// Full spell descriptions (2024 PHB) — used by the spell info modal.
+const SPELL_DETAILS = {
+  'Bane': {
+    schoolClass: 'Level 1 Enchantment (Bard, Cleric, Warlock)',
+    time: 'Action',
+    range: '30 feet',
+    components: 'V, S, M (a drop of blood)',
+    duration: 'Concentration, up to 1 minute',
+    desc: 'Up to three creatures of your choice that you can see within range must each make a Charisma saving throw. Whenever a target that fails this save makes an attack roll or a saving throw before the spell ends, the target must subtract 1d4 from the attack roll or save.\n\nUsing a Higher-Level Spell Slot. You can target one additional creature for each spell slot level above 1.'
+  },
+  'Chain Lightning': {
+    schoolClass: 'Level 6 Evocation (Sorcerer, Wizard)',
+    time: 'Action',
+    range: '150 feet',
+    components: 'V, S, M (three silver pins)',
+    duration: 'Instantaneous',
+    desc: 'You launch a lightning bolt toward a target you can see within range. Three bolts then leap from that target to as many as three other targets of your choice, each of which must be within 30 feet of the first target. A target can be a creature or an object and can be targeted by only one of the bolts.\n\nEach target makes a Dexterity saving throw, taking 10d8 Lightning damage on a failed save or half as much damage on a successful one.\n\nUsing a Higher-Level Spell Slot. One additional bolt leaps from the first target to another target for each spell slot level above 6.'
+  },
+  'Counterspell': {
+    schoolClass: 'Level 3 Abjuration (Sorcerer, Warlock, Wizard)',
+    time: 'Reaction, which you take when you see a creature within 60 feet of yourself casting a spell with Verbal, Somatic, or Material components',
+    range: '60 feet',
+    components: 'S',
+    duration: 'Instantaneous',
+    desc: 'You attempt to interrupt a creature in the process of casting a spell. The creature makes a Constitution saving throw. On a failed save, the spell dissipates with no effect, and the action, Bonus Action, or Reaction used to cast it is wasted. If that spell was cast with a spell slot, the slot isn’t expended.'
+  },
+  'Disintegrate': {
+    schoolClass: 'Level 6 Transmutation (Sorcerer, Wizard)',
+    time: 'Action',
+    range: '60 feet',
+    components: 'V, S, M (a lodestone and dust)',
+    duration: 'Instantaneous',
+    desc: 'You launch a green ray at a target you can see within range. The target can be a creature, a nonmagical object, or a creation of magical force, such as the wall created by Wall of Force.\n\nA creature targeted by this spell makes a Dexterity saving throw. On a failed save, the target takes 10d6 + 40 Force damage. If this damage reduces it to 0 Hit Points, it and everything nonmagical it is wearing and carrying are disintegrated into gray dust. The target can be revived only by a True Resurrection or a Wish spell.\n\nThis spell automatically disintegrates a Large or smaller nonmagical object or a creation of magical force. If such a target is Huge or larger, this spell disintegrates a 10-foot-Cube portion of it.\n\nUsing a Higher-Level Spell Slot. The damage increases by 3d6 for each spell slot level above 6.'
+  },
+  'Eldritch Blast': {
+    schoolClass: 'Evocation Cantrip (Warlock)',
+    time: 'Action',
+    range: '120 feet',
+    components: 'V, S',
+    duration: 'Instantaneous',
+    desc: 'You hurl a beam of crackling energy. Make a ranged spell attack against one creature or object in range. On a hit, the target takes 1d10 Force damage.\n\nCantrip Upgrade. The spell creates two beams at level 5, three beams at level 11, and four beams at level 17. You can direct the beams at the same target or at different ones. Make a separate attack roll for each beam.'
+  },
+  'Elementalism': {
+    schoolClass: 'Transmutation Cantrip (Artificer, Druid, Sorcerer, Wizard)',
+    time: 'Action',
+    range: '30 feet',
+    components: 'V, S',
+    duration: 'Instantaneous',
+    desc: 'You exert control over the elements, creating one of the following effects within range.\n\nBeckon Air. You create a breeze strong enough to ripple cloth, stir dust, rustle leaves, and close open doors and shutters, all in a 5-foot Cube. Doors and shutters being held open by someone or something aren’t affected.\n\nBeckon Earth. You create a thin shroud of dust or sand that covers surfaces in a 5-foot-square area, or you cause a single word to appear in your handwriting in a patch of dirt or sand.\n\nBeckon Fire. You create a thin cloud of harmless embers and colored, scented smoke in a 5-foot Cube. You choose the color and scent, and the embers can light candles, torches, or lamps in that area. The smoke’s scent lingers for 1 minute.\n\nBeckon Water. You create a spray of cool mist that lightly dampens creatures and objects in a 5-foot Cube. Alternatively, you create 1 cup of clean water either in an open container or on a surface, and the water evaporates in 1 minute.\n\nSculpt Element. You cause dirt, sand, fire, smoke, mist, or water that can fit in a 1-foot Cube to assume a crude shape (such as that of a creature) for 1 hour.'
+  },
+  'Find Familiar': {
+    schoolClass: 'Level 1 Conjuration (Wizard)',
+    time: '1 hour or Ritual',
+    range: '10 feet',
+    components: 'V, S, M (burning incense worth 10+ GP, which the spell consumes)',
+    duration: 'Instantaneous',
+    desc: 'You gain the service of a familiar, a spirit that takes an animal form you choose: Bat, Cat, Frog, Hawk, Lizard, Octopus, Owl, Rat, Raven, Spider, Weasel, or another Beast that has a Challenge Rating of 0. Appearing in an unoccupied space within range, the familiar has the statistics of the chosen form (see appendix B), though it is a Celestial, Fey, or Fiend (your choice) instead of a Beast. Your familiar acts independently of you, but it obeys your commands.\n\nTelepathic Connection. While your familiar is within 100 feet of you, you can communicate with it telepathically. Additionally, as a Bonus Action, you can see through the familiar’s eyes and hear what it hears until the start of your next turn, gaining the benefits of any special senses it has.\n\nFinally, when you cast a spell with a range of touch, your familiar can deliver the touch. Your familiar must be within 100 feet of you, and it must take a Reaction to deliver the touch when you cast the spell.\n\nCombat. The familiar is an ally to you and your allies. It rolls its own Initiative and acts on its own turn. A familiar can’t attack, but it can take other actions as normal.\n\nDisappearance of the Familiar. When the familiar drops to 0 Hit Points, it disappears. It reappears after you cast this spell again. As a Magic action, you can temporarily dismiss the familiar to a pocket dimension. Alternatively, you can dismiss it forever. As a Magic action while it is temporarily dismissed, you can cause it to reappear in an unoccupied space within 30 feet of you. Whenever the familiar drops to 0 Hit Points or disappears into the pocket dimension, it leaves behind in its space anything it was wearing or carrying.\n\nOne Familiar Only. You can’t have more than one familiar at a time. If you cast this spell while you have a familiar, you instead cause it to adopt a new eligible form.'
+  },
+  'Fireball': {
+    schoolClass: 'Level 3 Evocation (Sorcerer, Wizard)',
+    time: 'Action',
+    range: '150 feet',
+    components: 'V, S, M (a ball of bat guano and sulfur)',
+    duration: 'Instantaneous',
+    desc: 'A bright streak flashes from you to a point you choose within range and then blossoms with a low roar into a fiery explosion. Each creature in a 20-foot-radius Sphere centered on that point makes a Dexterity saving throw, taking 8d6 Fire damage on a failed save or half as much damage on a successful one.\n\nFlammable objects in the area that aren’t being worn or carried start burning.\n\nUsing a Higher-Level Spell Slot. The damage increases by 1d6 for each spell slot level above 3.'
+  },
+  'Fly': {
+    schoolClass: 'Level 3 Transmutation (Artificer, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: 'Touch',
+    components: 'V, S, M (a feather)',
+    duration: 'Concentration, up to 10 minutes',
+    desc: 'You touch a willing creature. For the duration, the target gains a Fly Speed of 60 feet and can hover. When the spell ends, the target falls if it is still aloft unless it can stop the fall.\n\nUsing a Higher-Level Spell Slot. You can target one additional creature for each spell slot level above 3.'
+  },
+  'Forcecage': {
+    schoolClass: 'Level 7 Evocation (Bard, Warlock, Wizard)',
+    time: 'Action',
+    range: '100 feet',
+    components: 'V, S, M (ruby dust worth 1,500+ GP, which the spell consumes)',
+    duration: 'Concentration, up to 1 hour',
+    desc: 'An immobile, Invisible, Cube-shaped prison composed of magical force springs into existence around an area you choose within range. The prison can be a cage or a solid box, as you choose.\n\nA prison in the shape of a cage can be up to 20 feet on a side and is made from 1/2-inch diameter bars spaced 1/2 inch apart. A prison in the shape of a box can be up to 10 feet on a side, creating a solid barrier that prevents any matter from passing through it and blocking any spells cast into or out from the area.\n\nWhen you cast the spell, any creature that is completely inside the cage’s area is trapped. Creatures only partially within the area, or those too large to fit inside it, are pushed away from the center of the area until they are completely outside it.\n\nA creature inside the cage can’t leave it by nonmagical means. If the creature tries to use teleportation or interplanar travel to leave, it must first make a Charisma saving throw. On a successful save, the creature can use that magic to exit the cage. On a failed save, the creature doesn’t exit the cage and wastes the spell or effect. The cage also extends into the Ethereal Plane, blocking ethereal travel.\n\nThis spell can’t be dispelled by Dispel Magic.'
+  },
+  'Greater Invisibility': {
+    schoolClass: 'Level 4 Illusion (Bard, Sorcerer, Wizard)',
+    time: 'Action',
+    range: 'Touch',
+    components: 'V, S',
+    duration: 'Concentration, up to 1 minute',
+    desc: 'A creature you touch has the Invisible condition until the spell ends.'
+  },
+  'Hellish Rebuke': {
+    schoolClass: 'Level 1 Evocation (Warlock)',
+    time: 'Reaction, which you take in response to taking damage from a creature that you can see within 60 feet of yourself',
+    range: '60 feet',
+    components: 'V, S',
+    duration: 'Instantaneous',
+    desc: 'The creature that damaged you is momentarily surrounded by green flames. It makes a Dexterity saving throw, taking 2d10 Fire damage on a failed save or half as much damage on a successful one.\n\nUsing a Higher-Level Spell Slot. The damage increases by 1d10 for each spell slot level above 1.'
+  },
+  'Hex': {
+    schoolClass: 'Level 1 Enchantment (Warlock)',
+    time: 'Bonus Action',
+    range: '90 feet',
+    components: 'V, S, M (the petrified eye of a newt)',
+    duration: 'Concentration, up to 1 hour',
+    desc: 'You place a curse on a creature that you can see within range. Until the spell ends, you deal an extra 1d6 Necrotic damage to the target whenever you hit it with an attack roll. Also, choose one ability when you cast the spell. The target has Disadvantage on ability checks made with the chosen ability.\n\nIf the target drops to 0 Hit Points before this spell ends, you can take a Bonus Action on a later turn to curse a new creature.\n\nUsing a Higher-Level Spell Slot. Your Concentration can last longer with a spell slot of level 2 (up to 4 hours), 3–4 (up to 8 hours), or 5+ (24 hours).'
+  },
+  'Hypnotic Pattern': {
+    schoolClass: 'Level 3 Illusion (Bard, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: '120 feet',
+    components: 'S, M (a pinch of confetti)',
+    duration: 'Concentration, up to 1 minute',
+    desc: 'You create a twisting pattern of colors in a 30-foot Cube within range. The pattern appears for a moment and vanishes. Each creature in the area who can see the pattern must succeed on a Wisdom saving throw or have the Charmed condition for the duration. While Charmed, the creature has the Incapacitated condition and a Speed of 0.\n\nThe spell ends for an affected creature if it takes any damage or if someone else uses an action to shake the creature out of its stupor.'
+  },
+  'Light': {
+    schoolClass: 'Evocation Cantrip (Artificer, Bard, Cleric, Sorcerer, Wizard)',
+    time: 'Action',
+    range: 'Touch',
+    components: 'V, M (a firefly or phosphorescent moss)',
+    duration: '1 hour',
+    desc: 'You touch one Large or smaller object that isn’t being worn or carried by someone else. Until the spell ends, the object sheds Bright Light in a 20-foot radius and Dim Light for an additional 20 feet. The light can be colored as you like.\n\nCovering the object with something opaque blocks the light. The spell ends if you cast it again.'
+  },
+  'Mage Hand': {
+    schoolClass: 'Conjuration Cantrip (Artificer, Bard, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: '30 feet',
+    components: 'V, S',
+    duration: '1 minute',
+    desc: 'A spectral, floating hand appears at a point you choose within range. The hand lasts for the duration. The hand vanishes if it is ever more than 30 feet away from you or if you cast this spell again.\n\nWhen you cast the spell, you can use the hand to manipulate an object, open an unlocked door or container, stow or retrieve an item from an open container, or pour the contents out of a vial.\n\nAs a Magic action on your later turns, you can control the hand thus again. As part of that action, you can move the hand up to 30 feet.\n\nThe hand can’t attack, activate magic items, or carry more than 10 pounds.'
+  },
+  'Magic Missile': {
+    schoolClass: 'Level 1 Evocation (Sorcerer, Wizard)',
+    time: 'Action',
+    range: '120 feet',
+    components: 'V, S',
+    duration: 'Instantaneous',
+    desc: 'You create three glowing darts of magical force. Each dart strikes a creature of your choice that you can see within range. A dart deals 1d4 + 1 Force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.\n\nUsing a Higher-Level Spell Slot. The spell creates one more dart for each spell slot level above 1.'
+  },
+  'Message': {
+    schoolClass: 'Transmutation Cantrip (Artificer, Bard, Druid, Sorcerer, Wizard)',
+    time: 'Action',
+    range: '120 feet',
+    components: 'S, M (a copper wire)',
+    duration: '1 round',
+    desc: 'You point toward a creature within range and whisper a message. The target (and only the target) hears the message and can reply in a whisper that only you can hear.\n\nYou can cast this spell through solid objects if you are familiar with the target and know it is beyond the barrier. Magical silence; 1 foot of stone, metal, or wood; or a thin sheet of lead blocks the spell.'
+  },
+  'Mind Blank': {
+    schoolClass: 'Level 8 Abjuration (Bard, Wizard)',
+    time: 'Action',
+    range: 'Touch',
+    components: 'V, S',
+    duration: '24 hours',
+    desc: 'Until the spell ends, one willing creature you touch has Immunity to Psychic damage and the Charmed condition. The target is also unaffected by anything that would sense its emotions or alignment, read its thoughts, or magically detect its location, and no spell - not even Wish - can gather information about the target, observe it remotely, or control its mind.'
+  },
+  'Mind Sliver': {
+    schoolClass: 'Enchantment Cantrip (Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: '60 feet',
+    components: 'V',
+    duration: '1 round',
+    desc: 'You try to temporarily sliver the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 Psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn.\n\nCantrip Upgrade. The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).'
+  },
+  'Minor Illusion': {
+    schoolClass: 'Illusion Cantrip (Bard, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: '30 feet',
+    components: 'S, M (a bit of fleece)',
+    duration: '1 minute',
+    desc: 'You create a sound or an image of an object within range that lasts for the duration. See the descriptions below for the effects of each. The illusion ends if you cast this spell again.\n\nIf a creature takes a Study action to examine the sound or image, the creature can determine that it is an illusion with a successful Intelligence (Investigation) check against your spell save DC. If a creature discerns the illusion for what it is, the illusion becomes faint to the creature.\n\nSound. If you create a sound, its volume can range from a whisper to a scream. It can be your voice, someone else’s voice, a lion’s roar, a beating of drums, or any other sound you choose. The sound continues unabated throughout the duration, or you can make discrete sounds at different times before the spell ends.\n\nImage. If you create an image of an object—such as a chair, muddy footprints, or a small chest—it must be no larger than a 5-foot Cube. The image can’t create sound, light, smell, or any other sensory effect. Physical interaction with the image reveals it to be an illusion, since things can pass through it.'
+  },
+  'Mirror Image': {
+    schoolClass: 'Level 2 Illusion (Bard, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: 'Self',
+    components: 'V, S',
+    duration: '1 minute',
+    desc: 'Three illusory duplicates of yourself appear in your space. Until the spell ends, the duplicates move with you and mimic your actions, shifting position so it’s impossible to track which image is real.\n\nEach time a creature hits you with an attack roll during the spell’s duration, roll a d6 for each of your remaining duplicates. If any of the d6s rolls a 3 or higher, one of the duplicates is hit instead of you, and the duplicate is destroyed. The duplicates otherwise ignore all other damage and effects. The spell ends when all three duplicates are destroyed.\n\nA creature is unaffected by this spell if it has the Blinded condition, Blindsight, or Truesight.'
+  },
+  'Misty Step': {
+    schoolClass: 'Level 2 Conjuration (Sorcerer, Warlock, Wizard)',
+    time: 'Bonus Action',
+    range: 'Self',
+    components: 'V',
+    duration: 'Instantaneous',
+    desc: 'Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space you can see.'
+  },
+  'Plane Shift': {
+    schoolClass: 'Level 7 Conjuration (Cleric, Druid, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: 'Touch',
+    components: 'V, S, M (a forked, metal rod worth 250+ GP and attuned to a plane of existence)',
+    duration: 'Instantaneous',
+    desc: 'You and up to eight willing creatures who link hands in a circle are transported to a different plane of existence. You can specify a target destination in general terms, such as the City of Brass on the Elemental Plane of Fire or the palace of Dispater on the second level of the Nine Hells, and you appear in or near that destination, as determined by the DM.\n\nAlternatively, if you know the sigil sequence of a teleportation circle on another plane of existence, this spell can take you to that circle. If the teleportation circle is too small to hold all the creatures you transported, they appear in the closest unoccupied spaces next to the circle.'
+  },
+  'Polymorph': {
+    schoolClass: 'Level 4 Transmutation (Bard, Druid, Sorcerer, Wizard)',
+    time: 'Action',
+    range: '60 feet',
+    components: 'V, S, M (a caterpillar cocoon)',
+    duration: 'Concentration, up to 1 hour',
+    desc: 'You attempt to transform a creature that you can see within range into a Beast. The target must succeed on a Wisdom saving throw or shape-shift into a Beast form for the duration. That form can be any Beast you choose that has a Challenge Rating equal to or less than the target\'s (or the target\'s level if it doesn\'t have a Challenge Rating). The target\'s game statistics are replaced by the stat block of the chosen Beast, but the target retains its alignment, personality, creature type, Hit Points, and Hit Point Dice. See appendix B for a sample of Beast stat blocks.\n\nThe target gains a number of Temporary Hit Points equal to the Hit Points of the Beast form. These Temporary Hit Points vanish if any remain when the spell ends. The spell ends early on the target if it has no Temporary Hit Points left.\n\nThe target is limited in the actions it can perform by the anatomy of its new form, and it can’t speak or cast spells.\n\nThe target\'s gear melds into the new form. The creature can\'t use or otherwise benefit from any of that equipment.'
+  },
+  'Prestidigitation': {
+    schoolClass: 'Transmutation Cantrip (Artificer, Bard, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: '10 feet',
+    components: 'V, S',
+    duration: 'Up to 1 hour',
+    desc: 'You create a magical effect within range. Choose the effect from the options below. If you cast this spell multiple times, you can have up to three of its non-instantaneous effects active at a time.\n\nSensory Effect. You create an instantaneous, harmless sensory effect, such as a shower of sparks, a puff of wind, faint musical notes, or an odd odor.\n\nFire Play. You instantaneously light or snuff out a candle, a torch, or a small campfire.\n\nClean or Soil. You instantaneously clean or soil an object no larger than 1 cubic foot.\n\nMinor Sensation. You chill, warm, or flavor up to 1 cubic foot of nonliving material for 1 hour.\n\nMagic Mark. You make a color, a small mark, or a symbol appear on an object or a surface for 1 hour.\n\nMinor Creation. You create a nonmagical trinket or an illusory image that can fit in your hand. It lasts until the end of your next turn. A trinket can deal no damage and has no monetary worth.'
+  },
+  'Shield': {
+    schoolClass: 'Level 1 Abjuration (Sorcerer, Wizard)',
+    time: 'Reaction, which you take when you are hit by an attack roll or targeted by the Magic Missile spell',
+    range: 'Self',
+    components: 'V, S',
+    duration: '1 round',
+    desc: 'An imperceptible barrier of magical force protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from Magic Missile.'
+  },
+  'Sorcerous Burst': {
+    schoolClass: 'Evocation Cantrip (Sorcerer)',
+    time: 'Action',
+    range: '120 feet',
+    components: 'V, S',
+    duration: 'Instantaneous',
+    desc: 'You cast sorcerous energy at one creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d8 damage of a type you choose: Acid, Cold, Fire, Lightning, Poison, Psychic, or Thunder.\n\nIf you roll an 8 on a d8 for this spell, you can roll another d8, and add it to the damage. When you cast this spell, the maximum number of these d8s you can add to the spell’s damage equals your spellcasting ability modifier.\n\nCantrip Upgrade. The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).'
+  },
+  'Suggestion': {
+    schoolClass: 'Level 2 Enchantment (Bard, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: '30 feet',
+    components: 'V, M (a drop of honey)',
+    duration: 'Concentration, up to 8 hours',
+    desc: 'You suggest a course of activity—described in no more than 25 words—to one creature you can see within range that can hear and understand you. The suggestion must sound achievable and not involve anything that would obviously deal damage to the target or its allies. For example, you could say, “Fetch the key to the cult’s treasure vault, and give the key to me.” Or you could say, “Stop fighting, leave this library peacefully, and don’t return.”\n\nThe target must succeed on a Wisdom saving throw or have the Charmed condition for the duration or until you or your allies deal damage to the target. The Charmed target pursues the suggestion to the best of its ability. The suggested activity can continue for the entire duration, but if the suggested activity can be completed in a shorter time, the spell ends for the target upon completing it.'
+  },
+  'Sunburst': {
+    schoolClass: 'Level 8 Evocation (Cleric, Druid, Sorcerer, Wizard)',
+    time: 'Action',
+    range: '150 feet',
+    components: 'V, S, M (a piece of sunstone)',
+    duration: 'Instantaneous',
+    desc: 'Brilliant sunlight flashes in a 60-foot-radius Sphere centered on a point you choose within range. Each creature in the Sphere makes a Constitution saving throw. On a failed save, a creature takes 12d6 Radiant damage and has the Blinded condition for 1 minute. On a successful save, it takes half as much damage only.\n\nA creature Blinded by this spell makes another Constitution saving throw at the end of each of its turns, ending the effect on itself on a success.\n\nThis spell dispels Darkness in its area that was created by any spell.'
+  },
+  'Synaptic Static': {
+    schoolClass: 'Level 5 Enchantment (Bard, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: '120 feet',
+    components: 'V, S',
+    duration: 'Instantaneous',
+    desc: 'You cause psychic energy to erupt at a point within range. Each creature in a 20-foot-radius Sphere centered on that point makes an Intelligence saving throw, taking 8d6 Psychic damage on a failed save or half as much damage on a successful one.\n\nOn a failed save, a target also has muddled thoughts for 1 minute. During that time, it subtracts 1d6 from all its attack rolls and ability checks, as well as any Constitution saving throws to maintain Concentration. The target makes an Intelligence saving throw at the end of each of its turns, ending the effect on itself on a success.'
+  },
+  'Tasha\'s Hideous Laughter': {
+    schoolClass: 'Level 1 Enchantment (Bard, Warlock, Wizard)',
+    time: 'Action',
+    range: '30 feet',
+    components: 'V, S, M (a tart and a feather)',
+    duration: 'Concentration, up to 1 minute',
+    desc: 'One creature of your choice that you can see within range makes a Wisdom saving throw. On a failed save, it has the Prone and Incapacitated conditions for the duration. During that time, it laughs uncontrollably if it’s capable of laughter, and it can’t end the Prone condition on itself.\n\nAt the end of each of its turns and each time it takes damage, it makes another Wisdom saving throw. The target has Advantage on the save if the save is triggered by damage. On a successful save, the spell ends.\n\nUsing a Higher-Level Spell Slot. You can target one additional creature for each spell slot level about 1.'
+  },
+  'Thunderclap': {
+    schoolClass: 'Evocation Cantrip (Artificer, Bard, Druid, Sorcerer, Warlock, Wizard)',
+    time: 'Action',
+    range: 'Self',
+    components: 'S',
+    duration: 'Instantaneous',
+    desc: 'Each creature in a 5-foot Emanation originating from you must succeed on a Constitution saving throw or take 1d6 Thunder damage. The spell’s thunderous sound can be heard up to 100 feet away.\n\nCantrip Upgrade. The damage increases by 1d6 when you reach levels 5 (2d6), 11 (3d6), and 17 (4d6).'
+  },
+  'Wall of Force': {
+    schoolClass: 'Level 5 Evocation (Wizard)',
+    time: 'Action',
+    range: '120 feet',
+    components: 'V, S, M (a shard of glass)',
+    duration: 'Concentration, up to 10 minutes',
+    desc: 'An Invisible wall of force springs into existence at a point you choose within range. The wall appears in any orientation you choose, as a horizontal or vertical barrier or at an angle. It can be free floating or resting on a solid surface. You can form it into a hemispherical dome or a globe with a radius of up to 10 feet, or you can shape a flat surface made up of ten 10-foot-by-10-foot panels. Each panel must be contiguous with another panel. In any form, the wall is 1/4 inch thick and lasts for the duration. If the wall cuts through a creature’s space when it appears, the creature is pushed to one side of the wall (you choose which side).\n\nNothing can physically pass through the wall. It is immune to all damage and can’t be dispelled by Dispel Magic. A Disintegrate spell destroys the wall instantly, however. The wall also extends into the Ethereal Plane and blocks ethereal travel through the wall.'
+  },
+};
 
 // Sorcerer multiclass spell slot table — based on Sorcerer level only since Warlock uses Pact Magic separately
 const SORC_SLOTS = {
@@ -3003,7 +3327,10 @@ const DEFAULT_STATE = {
   lastSurgeRoll: null,        // 1-100 of the last Wild Magic Surge roll, persists for DM visibility
   // Found magic items (loot/awards). Each: { id, name, type, rarity,
   // attunement (bool), attuned (bool), chargesMax, chargesUsed, notes }
-  magicItems: []
+  magicItems: [],
+  // Hit Dice tracking (Warlock d8 + Sorcerer d6, spent independently)
+  hitDiceWarlockUsed: 0,
+  hitDiceSorcererUsed: 0
 };
 
 let state = loadState();
@@ -3589,7 +3916,52 @@ function renderSurge(level) {
 }
 
 function renderCombatResources(level) {
-  const sorcLevel = classBreakdown(level).s;
+  const { w, s } = classBreakdown(level);
+  const sorcLevel = s;
+
+  // Hit Dice — Warlock d8 pool
+  const hdwRow = document.getElementById('resource-hd-warlock');
+  if (w >= 1) {
+    hdwRow.hidden = false;
+    const max = w;
+    const used = Math.min(state.hitDiceWarlockUsed || 0, max);
+    const pipsContainer = document.getElementById('hd-warlock-pips');
+    pipsContainer.innerHTML = '';
+    for (let i = 0; i < max; i++) {
+      const pip = document.createElement('div');
+      pip.className = 'pip' + (i < max - used ? ' filled' : '');
+      pip.title = `Warlock d8 #${i + 1}`;
+      pip.addEventListener('click', () => {
+        const u = state.hitDiceWarlockUsed || 0;
+        state.hitDiceWarlockUsed = (i < max - u) ? max - i : max - i - 1;
+        saveState();
+        render();
+      });
+      pipsContainer.appendChild(pip);
+    }
+  } else { hdwRow.hidden = true; }
+
+  // Hit Dice — Sorcerer d6 pool
+  const hdsRow = document.getElementById('resource-hd-sorcerer');
+  if (s >= 1) {
+    hdsRow.hidden = false;
+    const max = s;
+    const used = Math.min(state.hitDiceSorcererUsed || 0, max);
+    const pipsContainer = document.getElementById('hd-sorcerer-pips');
+    pipsContainer.innerHTML = '';
+    for (let i = 0; i < max; i++) {
+      const pip = document.createElement('div');
+      pip.className = 'pip' + (i < max - used ? ' filled' : '');
+      pip.title = `Sorcerer d6 #${i + 1}`;
+      pip.addEventListener('click', () => {
+        const u = state.hitDiceSorcererUsed || 0;
+        state.hitDiceSorcererUsed = (i < max - u) ? max - i : max - i - 1;
+        saveState();
+        render();
+      });
+      pipsContainer.appendChild(pip);
+    }
+  } else { hdsRow.hidden = true; }
 
   // Sorcery Points (sorc 2+)
   const spRow = document.getElementById('resource-sp');
@@ -3940,8 +4312,23 @@ function renderSpells(level) {
   });
 
   const nextLevel = level + 1;
+  let currentGroup = null;
   for (const spell of sorted) {
-    if (spell.gained <= level) {
+    const isKnown = spell.gained <= level;
+    const isPreview = spell.gained === nextLevel;
+    if (!isKnown && !isPreview) continue;
+
+    // Insert a level-group header when the level changes
+    if (spell.level !== currentGroup) {
+      currentGroup = spell.level;
+      const headerTr = document.createElement('tr');
+      headerTr.className = 'spell-level-header';
+      const label = spell.level === 'Cantrip' ? 'Cantrips' : `Level ${SPELL_LEVEL_ORDER[spell.level]}`;
+      headerTr.innerHTML = `<td colspan="3">${label}</td>`;
+      tbody.appendChild(headerTr);
+    }
+
+    if (isKnown) {
       const tr = document.createElement('tr');
       const isCantrip = SPELL_LEVEL_ORDER[spell.level] === 0;
       let levelCell;
@@ -3968,7 +4355,8 @@ function renderSpells(level) {
         infoBtn.addEventListener('click', () => showSpellInfo(spell));
       }
       tbody.appendChild(tr);
-    } else if (spell.gained === nextLevel) {
+    } else {
+      // Preview row for the next level
       const tr = document.createElement('tr');
       tr.className = 'preview';
       tr.innerHTML = `<td><span class="level-tag">${spell.level}</span></td><td class="spell-name">${spell.name}<span class="preview-tag">Next Level</span></td><td class="spell-source">${spell.class || ''}</td>`;
@@ -4093,12 +4481,46 @@ function showInfo(title, bodyHTML) {
   showConfirm(title, bodyHTML, null, { okLabel: 'Close', infoOnly: true });
 }
 function showSpellInfo(spell) {
-  // Caelen's spell shape uses {name, level, class, gained, notes, concentration?}
-  const subtitle = `${spell.level} · ${spell.class || ''}${spell.concentration ? ' · Concentration' : ''}`;
-  const notesBlock = spell.notes
-    ? `<p style="font-family:'EB Garamond',serif; font-size:0.95rem; color:var(--parchment); line-height:1.5; margin:0;">${spell.notes}</p>`
-    : '';
-  showInfo(spell.name, `<div class="spell-info-subtitle">${subtitle}</div>${notesBlock}`);
+  // Caelen's spell shape: { name, level, class, gained, notes, concentration? }
+  // Full 2024 PHB description (if available) lives in SPELL_DETAILS keyed by name.
+  const details = (typeof SPELL_DETAILS !== 'undefined') ? SPELL_DETAILS[spell.name] : null;
+  const subtitle = details
+    ? details.schoolClass
+    : `${spell.level} · ${spell.class || ''}${spell.concentration ? ' · Concentration' : ''}`;
+
+  // Build the metadata grid (Casting Time / Range / Components / Duration)
+  let metaGrid = '';
+  if (details) {
+    metaGrid = `
+      <dl class="spell-info-grid">
+        <dt>Casting Time</dt><dd>${details.time}</dd>
+        <dt>Range</dt><dd>${details.range}</dd>
+        <dt>Components</dt><dd>${details.components}</dd>
+        <dt>Duration</dt><dd>${details.duration}</dd>
+      </dl>
+    `;
+  }
+
+  // Body: full description if we have it, fall back to the short notes
+  let body = '';
+  if (details && details.desc) {
+    // Split on double-newline into paragraphs; "Higher Level" / "Cantrip Upgrade" lines get italics
+    const paragraphs = details.desc.split('\n\n').map(p => p.trim()).filter(Boolean);
+    body = paragraphs.map(p => {
+      const isUpgrade = /^(Cantrip Upgrade|Using a Higher-Level Spell Slot|Higher Level)/.test(p);
+      const cls = isUpgrade ? 'spell-info-upgrade' : 'spell-info-para';
+      return `<p class="${cls}">${escapeForSpellInfo(p)}</p>`;
+    }).join('');
+  } else if (spell.notes) {
+    body = `<p class="spell-info-para">${spell.notes}</p>`;
+  }
+
+  showInfo(spell.name, `<div class="spell-info-subtitle">${subtitle}</div>${metaGrid}${body}`);
+}
+// Escape user-facing spell description body. Keep most punctuation, just
+// neutralise the angle brackets so any stray tags don't render.
+function escapeForSpellInfo(text) {
+  return text.replace(/[<>]/g, c => ({'<':'&lt;','>':'&gt;'}[c]));
 }
 function closeConfirmModal() {
   document.getElementById('confirm-overlay').hidden = true;
@@ -4402,31 +4824,70 @@ document.getElementById('concentration-select').addEventListener('change', (e) =
 
 // Rest buttons
 document.getElementById('short-rest-btn').addEventListener('click', () => {
-  // Pact Magic slots recover on a Short Rest
-  state.usedSlots.warlock = 0;
-  // Hexblade's Curse: once per short OR long rest (legacy XGE)
-  state.hexbladesCurseUsed = false;
-  // (Magical Cunning is long-rest only per RAW; not reset here.)
-  saveState();
-  render();
+  const { w } = classBreakdown(state.level);
+  const items = [];
+  if (w >= 1) items.push('Refill all Pact Magic slots');
+  items.push("Refresh Hexblade's Curse (1/short or long rest)");
+  items.push("Spend Hit Dice manually after — a short rest doesn't auto-heal");
+  const body = `
+    <p>This will:</p>
+    <ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>
+    <div class="confirm-note">Magical Cunning, Innate Sorcery, Sorcery Points, and Tides of Chaos refresh only on a long rest.</div>
+  `;
+  showConfirm('Take a Short Rest?', body, () => {
+    state.usedSlots.warlock = 0;
+    state.hexbladesCurseUsed = false;
+    saveState();
+    render();
+  }, { okLabel: 'Short Rest' });
 });
 
 document.getElementById('long-rest-btn').addEventListener('click', () => {
-  state.hpCurrent = null;     // back to max
-  state.tempHp = 0;           // IL grant only lasts 1h anyway
-  state.usedSlots = { warlock: 0, sorc1: 0, sorc2: 0, sorc3: 0, sorc4: 0, sorc5: 0, sorc6: 0, sorc7: 0, sorc8: 0 };
-  state.sorceryPoints = classBreakdown(state.level).s;
-  state.innateSorceryUsed = 0;
-  state.magicalCunningUsed = false;
-  state.heavenlyWingsUsed = false;
-  state.hexbladesCurseUsed = false;
-  state.tidesOfChaosUsed = false; // Wild Magic Tides of Chaos refreshes on LR (or DM-triggered surge)
-  state.deathSavesSuccess = 0;
-  state.deathSavesFail = 0;
-  // concentratingOn left as-is — concentration isn't reset by rest, only by damage / new spell / death.
-  // Conditions and exhaustion are intentionally NOT reset (some persist through rests; the player clears manually).
-  saveState();
-  render();
+  const { w, s } = classBreakdown(state.level);
+  const items = ['Restore HP to max and clear Temp HP'];
+  const hdRecover = Math.max(1, Math.floor(state.level / 2));
+  items.push(`Refund up to ${hdRecover} Hit Dice (half character level, min 1)`);
+  if (w >= 1) items.push('Refill all Pact Magic slots');
+  if (s >= 1) items.push('Refill all Sorcerer spell slots');
+  if (s >= 2) items.push(`Refill Sorcery Points to ${s}`);
+  if (s >= 1) items.push('Refill Innate Sorcery uses');
+  if (w >= 2) items.push('Refresh Magical Cunning');
+  if (w >= 1) items.push("Refresh Hexblade's Curse");
+  // Heavenly Wings is gated on the Aasimar feat pick — show generically.
+  items.push("Refresh Heavenly Wings (Aasimar transformation)");
+  if (s >= 3) items.push('Refresh Tides of Chaos');
+  items.push('Reset death saves');
+  const body = `
+    <p>This will:</p>
+    <ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>
+    <div class="confirm-note">Conditions, exhaustion, and concentration are <strong>not</strong> auto-cleared.</div>
+  `;
+  showConfirm('Take a Long Rest?', body, () => {
+    state.hpCurrent = null;
+    state.tempHp = 0;
+    state.usedSlots = { warlock: 0, sorc1: 0, sorc2: 0, sorc3: 0, sorc4: 0, sorc5: 0, sorc6: 0, sorc7: 0, sorc8: 0 };
+    state.sorceryPoints = classBreakdown(state.level).s;
+    state.innateSorceryUsed = 0;
+    state.magicalCunningUsed = false;
+    state.heavenlyWingsUsed = false;
+    state.hexbladesCurseUsed = false;
+    state.tidesOfChaosUsed = false;
+    state.deathSavesSuccess = 0;
+    state.deathSavesFail = 0;
+    // Hit Dice: regain up to half character level (min 1) total. Refill
+    // Warlock d8s first (better die), then Sorcerer d6s with the remainder.
+    let regain = Math.max(1, Math.floor(state.level / 2));
+    const wUsed = state.hitDiceWarlockUsed || 0;
+    const wRefill = Math.min(wUsed, regain);
+    state.hitDiceWarlockUsed = wUsed - wRefill;
+    regain -= wRefill;
+    if (regain > 0) {
+      const sUsed = state.hitDiceSorcererUsed || 0;
+      state.hitDiceSorcererUsed = Math.max(0, sUsed - regain);
+    }
+    saveState();
+    render();
+  }, { okLabel: 'Long Rest' });
 });
 
 document.getElementById('coin').addEventListener('input', (e) => {
