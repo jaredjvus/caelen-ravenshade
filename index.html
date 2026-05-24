@@ -1253,6 +1253,15 @@ body::before {
   border-color: var(--blood);
   text-decoration: line-through;
 }
+.spell-table button.cast-btn.concentrating {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold-bright);
+}
+.spell-table button.cast-btn.concentrating:hover {
+  background: var(--gold-bright);
+  color: var(--ink);
+}
 
 /* CAST POPOVER */
 .cast-popover {
@@ -4375,7 +4384,10 @@ function renderSpells(level) {
       const isCantrip = SPELL_LEVEL_ORDER[spell.level] === 0;
       const concTag = spell.concentration ? '<span class="conc-tag-inline">C</span>' : '';
 
-      // Cast button on the right side. Cantrips have no cast button (no slots).
+      // Cast button on the right side.
+      // - Non-cantrips: standard cast (opens slot popover; concentration handoff via popover).
+      // - Concentration cantrips: claim Concentration directly (no slot cost, with takeover warn).
+      // - Non-concentration cantrips: no button (nothing to track).
       let castCell = '';
       if (!isCantrip) {
         const tiers = getValidSlotTiers(spell, level);
@@ -4383,6 +4395,9 @@ function renderSpells(level) {
         const classes = 'cast-btn' + (anyAvailable ? '' : ' no-slots');
         const titleAttr = anyAvailable ? 'Click to cast' : 'No slots available at or above this spell\'s level';
         castCell = `<button class="${classes}" data-spell="${spell.name}" title="${titleAttr}">Cast</button>`;
+      } else if (spell.concentration) {
+        const isConc = state.concentratingOn === spell.name;
+        castCell = `<button class="cast-btn cantrip-cast${isConc ? ' concentrating' : ''}" data-spell="${spell.name}" title="${isConc ? 'Click to end Concentration' : 'Claim Concentration on this cantrip'}">${isConc ? 'Concentrating' : 'Cast (Conc.)'}</button>`;
       }
 
       tr.innerHTML = `
@@ -4394,6 +4409,29 @@ function renderSpells(level) {
       if (btn) {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
+          // Concentration cantrip: no slot popover, claim/release Concentration directly
+          if (btn.classList.contains('cantrip-cast')) {
+            if (state.concentratingOn === spell.name) {
+              state.concentratingOn = null;
+              saveState();
+              render();
+              return;
+            }
+            const finalize = () => {
+              state.concentratingOn = spell.name;
+              saveState();
+              render();
+            };
+            if (state.concentratingOn && state.concentratingOn !== spell.name) {
+              showConfirm('Break Concentration?',
+                `<p>Casting <strong>${spell.name}</strong> will break your current Concentration on <strong>${state.concentratingOn}</strong>.</p><p>Continue?</p>`,
+                finalize,
+                { okLabel: `Cast ${spell.name}` });
+              return;
+            }
+            finalize();
+            return;
+          }
           openCastPopover(spell, btn);
         });
       }
@@ -4475,10 +4513,23 @@ function openCastPopover(spell, anchor) {
       opt.innerHTML = `<span>${t.label}</span><span class="tier-count">×${remaining}</span>`;
       opt.addEventListener('click', (e) => {
         e.stopPropagation();
-        state.usedSlots[t.key] = (state.usedSlots[t.key] || 0) + 1;
-        saveState();
-        closeCastPopover();
-        render();
+        const finalize = () => {
+          state.usedSlots[t.key] = (state.usedSlots[t.key] || 0) + 1;
+          if (spell.concentration) state.concentratingOn = spell.name;
+          saveState();
+          closeCastPopover();
+          render();
+        };
+        // Concentration handoff: warn if taking over from a different spell
+        if (spell.concentration && state.concentratingOn && state.concentratingOn !== spell.name) {
+          closeCastPopover();
+          showConfirm('Break Concentration?',
+            `<p>Casting <strong>${spell.name}</strong> will break your current Concentration on <strong>${state.concentratingOn}</strong>.</p><p>Continue?</p>`,
+            finalize,
+            { okLabel: `Cast ${spell.name}` });
+          return;
+        }
+        finalize();
       });
       pop.appendChild(opt);
     }
