@@ -1832,6 +1832,39 @@ body::before {
 .loop .arrow { color: var(--gold); padding: 0 0.4rem; }
 
 /* GEAR */
+/* WEAPON ATTACKS CARD (Caelen-specific; auto-built from equipped weapons in gear) */
+.weapon-attack-block {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--gold-tarnish);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  background: rgba(74, 138, 115, 0.03);
+}
+.weapon-attack-block h4 {
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  color: var(--gold);
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.weapon-attack-tags { display: inline-flex; gap: 0.4rem; align-items: center; }
+.weapon-tag-magic, .weapon-tag-mastery {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--silver-crack);
+  background: rgba(193, 154, 74, 0.15);
+  border: 1px solid var(--silver-crack);
+  border-radius: 3px;
+  padding: 0.1rem 0.45rem;
+  font-weight: 400;
+}
+.weapon-tag-mastery { color: var(--gold); border-color: var(--gold); background: rgba(74, 138, 115, 0.12); }
+
 .gear-search-wrap { position: relative; margin-bottom: 0.6rem; }
 .gear-search {
   width: 100%;
@@ -2602,6 +2635,17 @@ body.dm-mode .dm-hide { display: none; }
         </div>
       </details>
     </div>
+
+    <!-- Weapon Attacks — auto-built from equipped weapons in state.gear -->
+    <details class="card collapsible-card" id="weapon-attacks-card" style="margin-top: 2rem;" open hidden>
+      <summary>
+        <h3>Weapon Attacks</h3>
+      </summary>
+      <div class="collapsible-body">
+        <p id="weapon-attacks-blurb" style="font-style:italic;color:var(--parchment-aged);font-size:0.85rem;margin-bottom:0.6rem;"></p>
+        <div id="weapon-attacks-list"></div>
+      </div>
+    </details>
 
     <div style="margin-top: 2rem;" id="combat-loops">
       <!-- Filled by JS based on level -->
@@ -4256,6 +4300,9 @@ function render() {
   document.getElementById('curse-bonus').textContent = pb;
   document.getElementById('curse-heal').textContent = w + chaMod;
 
+  // Weapon Attacks (auto-built from equipped weapons in state.gear)
+  renderWeaponAttacks(level, stats, pb);
+
   // Healing Hands (PB d4s) & Celestial Revelation damage rider (PB radiant for Heavenly Wings)
   document.getElementById('healing-hands-dice').textContent = pb;
   document.getElementById('revelation-bonus').textContent = '+' + pb;
@@ -4343,7 +4390,7 @@ function render() {
   renderDeathSaves(hp);
   renderConditions();
   renderSurge(level);
-  renderMagicItemsCard();
+  // renderMagicItemsCard() call removed — the Gear card supersedes it.
 }
 
 function attunementMax(_level) { return 3; }
@@ -5307,6 +5354,58 @@ function renderLevelTable(currentLevel) {
 // ============================================================
 // GEAR — structured inventory with equip / attune / magical effects
 // ============================================================
+
+// Render the Weapon Attacks card from equipped weapons in state.gear.
+// Caelen-specific: weapons with ability='cha' use his Hex Warrior CHA-mod
+// (bonded Sickle, Pact of the Blade). Magic weapons stack attackBonus/damageBonus.
+// Hidden card if no equipped weapons.
+function renderWeaponAttacks(level, stats, pb) {
+  const card = document.getElementById('weapon-attacks-card');
+  if (!card) return;
+  const list = document.getElementById('weapon-attacks-list');
+  const blurb = document.getElementById('weapon-attacks-blurb');
+  list.innerHTML = '';
+  const equipped = (state.gear || []).filter(g => g.type === 'weapon' && g.equipped);
+  if (equipped.length === 0) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  const exhaustPen = (state.conditions && state.conditions.exhaustion) ? Math.min(6, state.conditions.exhaustion) : 0;
+  const chaMod = mod(stats.cha);
+  // Hex Warrior is L1+ for Caelen. Hexblade's Curse extra damage per hit = PB to a cursed target.
+  blurb.innerHTML = `Proficiency <strong>+${pb}</strong> · CHA mod <strong>${fmtMod(chaMod)}</strong> (Hex Warrior bonds use CHA in place of STR/DEX). On a cursed target add <strong>+${pb}</strong> damage and crit on 19-20 (Hexblade's Curse).`;
+  for (const wpn of equipped) {
+    // Resolve ability: 'cha' → CHA (Hex Warrior bonded), 'finesse' → best of STR/DEX, else 'str'/'dex'.
+    let ability;
+    if (wpn.ability === 'finesse') ability = mod(stats.dex) >= mod(stats.str) ? 'dex' : 'str';
+    else if (wpn.ability === 'cha' || wpn.ability === 'dex' || wpn.ability === 'str') ability = wpn.ability;
+    else ability = 'str';
+    const abilityMod = mod(stats[ability]);
+    const damageDie = wpn.damage || '1d4';
+    const damageType = wpn.damageType || 'slashing';
+    const attBonus = wpn.attackBonus || 0;
+    const dmgBonus = wpn.damageBonus || 0;
+    const toHit = pb + abilityMod + attBonus - exhaustPen;
+    const dmgStr = `${damageDie} + ${abilityMod + dmgBonus} ${damageType}`;
+    const tagParts = [];
+    if (attBonus || dmgBonus) tagParts.push(`<span class="weapon-tag-magic">Magic +${Math.max(attBonus, dmgBonus)}</span>`);
+    if (wpn.mastery) tagParts.push(`<span class="weapon-tag-mastery">${wpn.mastery}</span>`);
+    if (wpn.quantity && wpn.quantity > 1) tagParts.push(`×${wpn.quantity}`);
+    const block = document.createElement('div');
+    block.className = 'weapon-attack-block';
+    block.innerHTML = `
+      <h4>${wpn.name}${tagParts.length ? ' <span class="weapon-attack-tags">' + tagParts.join(' · ') + '</span>' : ''}</h4>
+      <p style="font-family:'Cinzel',serif;color:var(--gold);letter-spacing:0.05em;margin-bottom:0.3rem;">
+        ${fmtMod(toHit)} to hit · ${dmgStr}
+        <span style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--gold-tarnish);letter-spacing:0.1em;margin-left:0.5rem;">${ability.toUpperCase()}${attBonus || dmgBonus ? ' · magic' : ''}</span>
+      </p>
+      ${wpn.properties ? `<p style="font-size:0.78rem;color:var(--parchment-aged);">${wpn.properties}</p>` : ''}
+      ${wpn.notes ? `<p style="font-size:0.78rem;color:var(--parchment-aged);font-style:italic;">${wpn.notes}</p>` : ''}
+    `;
+    list.appendChild(block);
+  }
+}
 
 // One-shot computation of all bonuses contributed by currently-equipped (and
 // attuned, for attunement-required items) gear. Cache-cheap; called multiple
