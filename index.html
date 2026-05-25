@@ -4064,6 +4064,13 @@ function computeStats(level) {
   }
   // Cap at 20
   for (const k of Object.keys(stats)) stats[k] = Math.min(20, stats[k]);
+  // Gear stat overrides (Gauntlets of Ogre Power → STR 19, Belt of Hill Giant
+  // → STR 21, Headband of Intellect → INT 19, Amulet of Health → CON 19).
+  // Applied AFTER the 20-cap so these magic items can exceed the cap as RAW.
+  const gearMods = computeGearMods();
+  for (const [k, v] of Object.entries(gearMods.statOverrides || {})) {
+    if (v > (stats[k] || 0)) stats[k] = v;
+  }
   return stats;
 }
 
@@ -4106,6 +4113,9 @@ function computeHP(level, stats) {
   let hp = 8 + conMod; // L1 max die
   for (let i = 2; i <= w; i++) hp += 6 + conMod;
   for (let i = 1; i <= s; i++) hp += 5 + conMod;
+  // Gear HP bonuses (homebrew items granting +N max HP, etc.)
+  const gearMods = computeGearMods();
+  hp += gearMods.hpBonus || 0;
   return Math.max(1, hp);
 }
 
