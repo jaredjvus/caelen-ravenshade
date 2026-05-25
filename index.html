@@ -525,6 +525,23 @@ body::before {
 }
 .hp-current .sep { color: var(--gold-tarnish); }
 
+.hp-actions { display: flex; gap: 0.4rem; justify-content: center; margin-top: 0.45rem; }
+.hp-action-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.55rem;
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--parchment-aged);
+  border-radius: 3px;
+  cursor: pointer;
+  flex: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.hp-action-btn:hover { color: var(--gold); border-color: var(--gold); }
+.hp-action-btn.hp-damage:hover { color: var(--blood-bright); border-color: var(--blood); }
 .temp-hp-row {
   display: flex;
   align-items: center;
@@ -2563,6 +2580,10 @@ body.dm-mode .dm-hide { display: none; }
         </div>
         <div class="temp-hp-row">
           + <input type="number" id="temp-hp" value="0" min="0"> <span class="temp-hp-label">temp</span>
+        </div>
+        <div class="hp-actions">
+          <button class="hp-action-btn hp-damage" id="hp-damage-btn" title="Apply damage (eats temp HP first)">− Damage</button>
+          <button class="hp-action-btn hp-heal" id="hp-heal-btn" title="Restore HP (capped at max)">+ Heal</button>
         </div>
         <button class="inspiring-btn" id="inspiring-btn" hidden title="Inspiring Leader: temp HP = character level + CHA mod (doesn't stack — only replaces if higher)">↻ Inspiring Leader</button>
         <div class="death-saves" id="death-saves" hidden>
@@ -4604,6 +4625,47 @@ function renderSurge(level) {
   }
 }
 
+// Prompt-to-roll Hit Die spend on Caelen (multiclass with two different dice).
+// kind = 'warlock' (d8) | 'sorcerer' (d6). Applies CON mod, caps heal at max HP.
+function promptHitDieSpendCaelen(kind, index, max) {
+  const die = kind === 'warlock' ? 8 : 6;
+  const stateKey = kind === 'warlock' ? 'hitDiceWarlockUsed' : 'hitDiceSorcererUsed';
+  const className = kind === 'warlock' ? 'Warlock' : 'Sorcerer';
+  const stats = computeStats(state.level);
+  const conMod = mod(stats.con);
+  const avg = Math.ceil((die + 1) / 2);
+  const maxHp = computeHP(state.level, stats);
+  const currentHp = state.hpCurrent == null ? maxHp : state.hpCurrent;
+  showConfirm(`Spend a Hit Die (${className} d${die})`,
+    `<p>Roll <strong>1d${die}</strong> and add your CON modifier (<strong>${conMod >= 0 ? '+' : ''}${conMod}</strong>) to recover Hit Points.</p>
+     <div style="margin:0.8rem 0;">
+       <label style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:0.4rem;">Roll result (1–${die})</label>
+       <input type="number" id="hd-roll-input" value="${avg}" min="1" max="${die}" style="width:5rem;text-align:center;padding:0.3rem;border:1px solid var(--gold-tarnish);background:rgba(255,255,255,0.6);color:var(--parchment);font-family:'Cinzel',serif;font-size:1.1rem;">
+       <span style="margin-left:0.6rem;color:var(--parchment-aged);font-family:'EB Garamond',serif;font-style:italic;">+ CON ${conMod >= 0 ? '+' : ''}${conMod} = <span id="hd-heal-readout" style="color:var(--gold);font-weight:600;">${Math.max(1, avg + conMod)}</span> HP healed</span>
+     </div>
+     <p style="font-size:0.85rem;color:var(--parchment-aged);font-style:italic;">Current HP: ${currentHp} / ${maxHp}. Healing caps at max.</p>`,
+    () => {
+      const roll = parseInt(document.getElementById('hd-roll-input').value, 10) || avg;
+      const heal = Math.max(1, roll + conMod);
+      state[stateKey] = max - index;
+      state.hpCurrent = Math.min(maxHp, currentHp + heal);
+      saveState();
+      render();
+    },
+    { okLabel: 'Spend & Heal' });
+  setTimeout(() => {
+    const inp = document.getElementById('hd-roll-input');
+    const readout = document.getElementById('hd-heal-readout');
+    if (inp && readout) {
+      inp.addEventListener('input', () => {
+        const r = Math.max(1, Math.min(die, parseInt(inp.value, 10) || 1));
+        readout.textContent = Math.max(1, r + conMod);
+      });
+      inp.focus(); inp.select();
+    }
+  }, 0);
+}
+
 function renderCombatResources(level) {
   const { w, s } = classBreakdown(level);
   const sorcLevel = s;
@@ -4622,7 +4684,9 @@ function renderCombatResources(level) {
       pip.title = `Warlock d8 #${i + 1}`;
       pip.addEventListener('click', () => {
         const u = state.hitDiceWarlockUsed || 0;
-        state.hitDiceWarlockUsed = (i < max - u) ? max - i : max - i - 1;
+        const isAvailable = i < max - u;
+        if (isAvailable) { promptHitDieSpendCaelen('warlock', i, max); return; }
+        state.hitDiceWarlockUsed = max - i - 1;
         saveState();
         render();
       });
@@ -4644,7 +4708,9 @@ function renderCombatResources(level) {
       pip.title = `Sorcerer d6 #${i + 1}`;
       pip.addEventListener('click', () => {
         const u = state.hitDiceSorcererUsed || 0;
-        state.hitDiceSorcererUsed = (i < max - u) ? max - i : max - i - 1;
+        const isAvailable = i < max - u;
+        if (isAvailable) { promptHitDieSpendCaelen('sorcerer', i, max); return; }
+        state.hitDiceSorcererUsed = max - i - 1;
         saveState();
         render();
       });
@@ -5896,6 +5962,46 @@ function levelDown() {
 document.getElementById('level-up-btn').addEventListener('click', levelUp);
 document.getElementById('level-down-btn').addEventListener('click', levelDown);
 
+// Damage / Heal quick-apply buttons. Eat temp HP first on damage; cap heal at max.
+function promptHpDelta(kind) {
+  const isDmg = kind === 'damage';
+  const title = isDmg ? 'Apply Damage' : 'Apply Heal';
+  const body = `
+    <p>Amount of ${isDmg ? 'damage to apply' : 'healing to apply'}:</p>
+    <input id="hp-delta-input" type="number" min="0" value="" autofocus
+      style="width:100%;padding:0.6rem;font-size:1.4rem;text-align:center;background:var(--ink);border:1px solid var(--gold-tarnish);color:var(--parchment);font-family:'Cinzel',serif;letter-spacing:0.08em;">
+    <p style="font-style:italic;color:var(--parchment-aged);font-size:0.85rem;margin-top:0.6rem;">
+      ${isDmg ? 'Temp HP absorbs first; remainder reduces current HP (floored at 0).' : 'Healing adds to current HP, capped at max.'}
+    </p>
+  `;
+  showConfirm(title, body, () => {
+    const n = parseInt(document.getElementById('hp-delta-input').value, 10);
+    if (!n || n < 0) return;
+    const maxHp = computeHP(state.level, computeStats(state.level));
+    const cur = state.hpCurrent === null ? maxHp : state.hpCurrent;
+    if (isDmg) {
+      let remaining = n;
+      const temp = state.tempHp || 0;
+      if (temp > 0) {
+        const ate = Math.min(temp, remaining);
+        state.tempHp = temp - ate;
+        remaining -= ate;
+      }
+      state.hpCurrent = Math.max(0, cur - remaining);
+    } else {
+      state.hpCurrent = Math.min(maxHp, cur + n);
+      // Auto-reset death saves on heal above 0
+      if (state.hpCurrent > 0) { state.deathSavesSuccess = 0; state.deathSavesFail = 0; }
+    }
+    saveState();
+    render();
+  }, { okLabel: isDmg ? 'Apply Damage' : 'Apply Heal' });
+  // Focus the input once the modal is on screen.
+  setTimeout(() => document.getElementById('hp-delta-input')?.focus(), 60);
+}
+document.getElementById('hp-damage-btn')?.addEventListener('click', () => promptHpDelta('damage'));
+document.getElementById('hp-heal-btn')?.addEventListener('click', () => promptHpDelta('heal'));
+
 document.getElementById('hp-current').addEventListener('input', (e) => {
   const v = parseInt(e.target.value, 10);
   state.hpCurrent = isNaN(v) ? null : v;
@@ -6293,6 +6399,14 @@ document.getElementById('gear-library-search').addEventListener('input', (e) => 
   if (_gs) _gs.addEventListener('input', () => renderGear());
   const _gsc = document.getElementById('gear-search-clear');
   if (_gsc) _gsc.addEventListener('click', () => { _gs.value = ''; renderGear(); _gs.focus(); });
+}
+
+// Spell search input wiring (Caelen has no level-up button, so anchor here)
+{
+  const _ss = document.getElementById('spell-search');
+  if (_ss) _ss.addEventListener('input', () => render());
+  const _ssc = document.getElementById('spell-search-clear');
+  if (_ssc) _ssc.addEventListener('click', () => { _ss.value = ''; render(); _ss.focus(); });
 }
 
 // Initial render
