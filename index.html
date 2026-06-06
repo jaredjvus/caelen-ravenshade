@@ -5035,9 +5035,17 @@ function renderConditions() {
     pill.textContent = name;
     pill.title = CONDITION_DESCRIPTIONS[key] || '';
     pill.addEventListener('click', () => {
-      state.conditions[key] = !state.conditions[key];
-      saveState();
-      render();
+      if (state.conditions[key]) {
+        showConfirm(name, `<p style="line-height:1.6">${CONDITION_DESCRIPTIONS[key] || ''}</p>`, () => {
+          state.conditions[key] = false;
+          saveState();
+          render();
+        }, { okLabel: 'Clear Condition' });
+      } else {
+        state.conditions[key] = true;
+        saveState();
+        render();
+      }
     });
     container.appendChild(pill);
   }
