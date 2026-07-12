@@ -1345,6 +1345,37 @@ body::before {
   padding: 0.5rem 0;
   font-family: 'EB Garamond', serif;
 }
+.cast-popover-metamagic {
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px dotted var(--gold-tarnish);
+}
+.cast-popover-metamagic-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-tarnish);
+  margin-bottom: 0.4rem;
+}
+.cast-popover-metamagic-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.85rem;
+  color: var(--parchment);
+  padding: 0.15rem 0;
+  cursor: pointer;
+}
+.cast-popover-metamagic-option input[type="checkbox"] {
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.cast-popover-metamagic-option input[type="checkbox"]:disabled + span {
+  color: var(--parchment-dim);
+  opacity: 0.6;
+}
 
 /* MODAL (ported from Rivet) — styled confirm + info dialogs */
 .modal-overlay {
@@ -1908,6 +1939,8 @@ body::before {
   font-weight: 400;
 }
 .weapon-tag-mastery { color: var(--gold); border-color: var(--gold); background: rgba(74, 138, 115, 0.12); }
+.weapon-tag-mastery.has-tip { cursor: pointer; }
+.weapon-tag-mastery.has-tip:hover { color: var(--gold-bright); }
 
 .gear-search-wrap { position: relative; margin-bottom: 0.6rem; }
 .gear-search {
@@ -2804,6 +2837,55 @@ body.dm-mode .dm-hide { display: none; }
       </div>
     </details>
 
+    <!-- Weapon Mastery Reference — every mastery any weapon on the sheet can carry,
+         so combat never needs the PHB. Click a mastery tag above, or the ⓘ in the
+         gear-edit modal, to jump straight to the relevant entry via the info modal. -->
+    <details class="card collapsible-card" id="mastery-reference-card" style="margin-top: 2rem;">
+      <summary>
+        <h3>Weapon Mastery Reference</h3>
+      </summary>
+      <div class="collapsible-body" id="mastery-reference-body">
+        <!-- filled by JS from WEAPON_MASTERIES -->
+      </div>
+    </details>
+
+    <!-- Familiar — Pact of the Chain (Warlock 3). Full stat block so combat
+         with Vex out doesn't require the Monster Manual. Shown from L3+. -->
+    <details class="card collapsible-card" id="familiar-card" style="margin-top: 2rem;" hidden>
+      <summary>
+        <h3>Familiar — Vex <span style="font-weight:400;color:var(--gold-tarnish);font-size:0.85em;">· Imp (Pact of the Chain)</span></h3>
+      </summary>
+      <div class="collapsible-body">
+        <p style="font-style:italic;color:var(--parchment-aged);font-size:0.85rem;margin-bottom:0.6rem;">Tiny Fiend, Shapechanger · rolls its own Initiative, acts on its own turn · CR 1 (200 XP, PB +2)</p>
+        <div class="two-col" style="margin-bottom:0.8rem;">
+          <div>
+            <p><strong>AC</strong> 13</p>
+            <p><strong>HP</strong> 10 (3d4 + 3)</p>
+            <p><strong>Speed</strong> 20 ft., Fly 40 ft.</p>
+          </div>
+          <div>
+            <p><strong>Skills</strong> Stealth +5</p>
+            <p><strong>Resistances</strong> Cold; Bludgeoning, Piercing, Slashing from nonmagical attacks</p>
+            <p><strong>Immunities</strong> Fire, Poison; Poisoned condition</p>
+          </div>
+        </div>
+        <p><strong>Senses</strong> Darkvision 120 ft., Passive Perception 12 &nbsp;·&nbsp; <strong>Languages</strong> Infernal, telepathy with Caelen (per Pact of the Chain)</p>
+        <div class="feature-block">
+          <h4>Sting</h4>
+          <p><em>Melee Attack Roll:</em> +5, reach 5 ft. <em>Hit:</em> 1d4 + 3 piercing damage plus 3d6 poison damage.</p>
+        </div>
+        <div class="feature-block">
+          <h4>Shapechanger</h4>
+          <p>Bonus action: polymorph into a Beast form — Rat (Speed 20 ft.), Raven (Speed 20 ft., Fly 60 ft.), or Spider (Speed 30 ft., Climb 30 ft.) — or back into its true form. Stats are the same in each form except Speed. Anything it's wearing transforms with it; carried gear doesn't. Reverts to its true form if it dies.</p>
+        </div>
+        <div class="feature-block">
+          <h4>Invisibility</h4>
+          <p>At will, no components: Vex can turn invisible (as the <em>Invisibility</em> spell). The effect ends early if Vex attacks or a Concentration check is failed as though concentrating on a spell.</p>
+        </div>
+        <p style="margin-top: 1rem;"><em>Combat role: a normal Find Familiar familiar can't attack, but Pact of the Chain specifically overrides that for Imp/Pseudodragon/Quasit/Sprite forms — Vex can take the Attack action (Sting) on her own Initiative. She's an ally to Caelen and his allies, disappears (leaving behind anything she's wearing/carrying) at 0 HP, and reappears the next time Find Familiar is cast.</em></p>
+      </div>
+    </details>
+
     <div style="margin-top: 2rem;" id="combat-loops">
       <!-- Filled by JS based on level -->
     </div>
@@ -2884,7 +2966,7 @@ body.dm-mode .dm-hide { display: none; }
       <div class="collapsible-body">
       <div class="rest-buttons">
         <button class="rest-btn" id="short-rest-btn" title="Restores Pact slots; refreshes Hexblade's Curse and Magical Cunning">Short Rest</button>
-        <button class="rest-btn" id="long-rest-btn" title="Restores HP, all slots, Sorcery Points, Innate Sorcery, Magical Cunning, Heavenly Wings, clears Temp HP">Long Rest</button>
+        <button class="rest-btn" id="long-rest-btn" title="Restores HP, all slots, Sorcery Points, Innate Sorcery, Magical Cunning, Heavenly Wings, Healing Hands, Luck Points (if Lucky was taken), clears Temp HP">Long Rest</button>
       </div>
       <div class="resource-row" id="resource-inspiration">
         <span class="resource-label has-tip" title="Spend Heroic Inspiration to gain advantage on one d20 roll (or reroll a d20 once and use either result). You can only have one Inspiration at a time. Awarded by the DM, some races (Human Resourceful), feats, and class features.">Heroic Inspiration</span>
@@ -2934,6 +3016,14 @@ body.dm-mode .dm-hide { display: none; }
       <div class="resource-row" id="resource-wings" hidden>
         <span class="resource-label has-tip" title="Bonus action: sprout two spectral wings for 1 minute. Gain a Fly Speed equal to your Speed. Shared Celestial Revelation rider: once per turn deal extra radiant damage equal to your Proficiency Bonus on a hit. Once per Long Rest.">Heavenly Wings</span>
         <button class="resource-toggle" id="heavenly-wings-toggle">Available</button>
+      </div>
+      <div class="resource-row" id="resource-healing-hands">
+        <span class="resource-label has-tip" title="Magic action. Touch a creature (including yourself) and roll a number of d4s equal to your Proficiency Bonus; the creature regains that many Hit Points. Once per Long Rest.">Healing Hands</span>
+        <button class="resource-toggle" id="healing-hands-toggle">Available</button>
+      </div>
+      <div class="resource-row" id="resource-luck" hidden>
+        <span class="resource-label has-tip" title="Lucky feat (chosen at L16). When you make an attack roll, ability check, or saving throw, or when a creature makes an attack roll against you, you can spend 1 Luck Point to give yourself Advantage on the roll (or, on an attack against you, force Disadvantage on the attacker). Decide after seeing the roll but before the outcome is determined. 3 points per Long Rest.">Luck Points</span>
+        <div class="resource-pips" id="luck-pips"></div>
       </div>
       </div>
     </details>
@@ -3327,7 +3417,7 @@ body.dm-mode .dm-hide { display: none; }
           </div>
           <div class="row-2">
             <div><label>Properties</label><input id="gear-form-weapon-properties" type="text" placeholder="Heavy, Reach, Two-Handed"></div>
-            <div><label>Mastery</label>
+            <div><label>Mastery <button type="button" class="hp-info-btn" id="mastery-info-btn" title="What do the masteries do?" aria-label="What do the masteries do?">ⓘ</button></label>
               <select id="gear-form-weapon-mastery">
                 <option value="">— none —</option>
                 <option value="Cleave">Cleave</option>
@@ -3461,7 +3551,22 @@ const LEVEL_DATA = [
   // L13
   { warlock: 4, sorcerer: 9, classGain: '5th-level spells: Wall of Force, Synaptic Static' },
   // L14
-  { warlock: 4, sorcerer: 10, classGain: '+1 Metamagic option (3rd total); +1 Sorcerer cantrip: Message' },
+  { warlock: 4, sorcerer: 10, classGain: '+1 Metamagic option (3rd total); +1 Sorcerer cantrip: Message',
+    feat: {
+      id: 'lvl14-metamagic',
+      label: 'Level 14 Metamagic — 3rd option',
+      options: [
+        { id: 'careful', name: 'Careful Spell', effect: '1 SP — up to CHA mod creatures auto-succeed the save (and take no half-damage) against your own AoE spell.' },
+        { id: 'distant', name: 'Distant Spell', effect: '1 SP — double a spell\'s range (Touch → 30 ft).' },
+        { id: 'empowered', name: 'Empowered Spell', effect: '1 SP — reroll damage dice up to CHA mod count; stacks with another Metamagic option.' },
+        { id: 'extended', name: 'Extended Spell', effect: '1 SP — double a duration of 1 minute+ (max 24 hours).' },
+        { id: 'heightened', name: 'Heightened Spell', effect: '3 SP — one target has Disadvantage on its first save against the spell.' },
+        { id: 'seeking', name: 'Seeking Spell', effect: '1 SP — reroll a missed spell attack roll (once per casting).' },
+        { id: 'twinned', name: 'Twinned Spell', effect: 'SP = spell level (min 1) — target a second creature with a single-target spell.' }
+      ],
+      default: 'twinned'
+    }
+  },
   // L15
   { warlock: 4, sorcerer: 11, classGain: '6th-level spells: Disintegrate, Chain Lightning' },
   // L16
@@ -3503,7 +3608,7 @@ const SPELLS = [
   // 1st level
   { name: 'Hex', level: '1st', class: 'Warlock', gained: 1, concentration: true, notes: 'Bonus action. 1d6 necrotic on hits. Moves to new target when current drops.' },
   { name: "Tasha's Hideous Laughter", level: '1st', class: 'Warlock', gained: 1, concentration: true, notes: 'WIS save, target prone and incapacitated on fail.' },
-  { name: 'Find Familiar', level: '1st', class: 'Pact of the Chain', gained: 3, notes: 'Summons Vex, an imp.' },
+  { name: 'Find Familiar', level: '1st', class: 'Pact of the Chain', gained: 3, notes: 'Summons Vex, an imp. Full stat block: Engine section → "Familiar — Vex".' },
   { name: 'Shield', level: '1st', class: 'Hexblade', gained: 1, notes: '+5 AC reaction, no damage from Magic Missile.' },
   { name: 'Magic Missile', level: '1st', class: 'Sorcerer', gained: 5, notes: 'Three force darts, auto-hit, 1d4+1 each.' },
   { name: 'Bane', level: '1st', class: 'Warlock', gained: 5, concentration: true, notes: 'Up to 3 targets within 30 ft, CHA save or -1d4 to attacks and saves for 1 min. Boosts every control spell.' },
@@ -3841,6 +3946,35 @@ function pactSlots(warlockLevel) {
   return { count: 2, level: 2 }; // 4 = 2 slots at 2nd
 }
 
+// ============================================================
+// METAMAGIC OPTIONS — full 2024 PHB Sorcerer list (rules text + SP cost).
+// Caelen knows Quickened + Subtle from L6 (Metamagic feature) plus one more
+// pick at L14 (see LEVEL_DATA[14].feat below). getKnownMetamagicIds() is the
+// single source of truth for "which options can I actually apply right now" —
+// used by the class feature text, the L14 picker, and the cast popover.
+// ============================================================
+const METAMAGIC_OPTIONS = {
+  careful:    { name: 'Careful Spell',   cost: 1, costLabel: '1 SP',  desc: "When you cast a spell that forces other creatures to make a saving throw, you can protect some of them from its full force. Choose a number of those creatures up to your Charisma modifier (minimum of one creature). A chosen creature automatically succeeds on its saving throw, and it takes no damage if it would normally take half damage on a successful save." },
+  distant:    { name: 'Distant Spell',   cost: 1, costLabel: '1 SP',  desc: "When you cast a spell that has a range of 5 feet or greater, you can double the range of the spell. When you cast a spell that has a range of Touch, you can make the range of the spell 30 feet." },
+  empowered:  { name: 'Empowered Spell', cost: 1, costLabel: '1 SP',  desc: "When you roll damage for a spell, you can reroll a number of the damage dice up to your Charisma modifier (minimum of one die), and you must use the new rolls. You can use Empowered Spell even if you've already used a different Metamagic option during the casting of the spell." },
+  extended:   { name: 'Extended Spell',  cost: 1, costLabel: '1 SP',  desc: "When you cast a spell that has a duration of 1 minute or longer, you can double its duration, to a maximum duration of 24 hours." },
+  heightened: { name: 'Heightened Spell',cost: 3, costLabel: '3 SP',  desc: "When you cast a spell that forces a creature to make a saving throw to resist its effects, you can give one target of the spell Disadvantage on its first saving throw made against the spell." },
+  quickened:  { name: 'Quickened Spell', cost: 2, costLabel: '2 SP',  desc: "When you cast a spell that has a casting time of an action, you can change the casting time to a Bonus Action for this casting." },
+  seeking:    { name: 'Seeking Spell',   cost: 1, costLabel: '1 SP',  desc: "If you make an attack roll for a spell and miss, you can reroll the die. You must use the new roll, and you can't use this Metamagic option again on the same casting of the spell." },
+  subtle:     { name: 'Subtle Spell',    cost: 1, costLabel: '1 SP',  desc: "When you cast a spell, you can cast it without any Verbal or Somatic components." },
+  twinned:    { name: 'Twinned Spell',   cost: null, costLabel: 'SP = spell level (min 1)', desc: "When you cast a spell that targets only one creature and doesn't have a range of Self, you can spend a number of Sorcery Points equal to the spell's level to target a second creature in range with the same spell (1 Sorcery Point if the spell is a Cantrip)." }
+};
+
+// Metamagic options Caelen actually knows at a given character level: L6
+// grants Quickened + Subtle (hardcoded — see the 'metamagic' feature below),
+// L14 adds one more from LEVEL_DATA[14].feat's alternates pick.
+function getKnownMetamagicIds(level) {
+  const ids = [];
+  if (level >= 6) ids.push('quickened', 'subtle');
+  if (level >= 14) ids.push(state.alternates['lvl14-metamagic'] || 'twinned');
+  return ids;
+}
+
 // Class features that gate on level
 const CLASS_FEATURES = [
   // Warlock
@@ -3851,7 +3985,7 @@ const CLASS_FEATURES = [
   { id: 'repelling', name: 'Repelling Blast', level: 2, source: 'Eldritch Invocation', desc: 'Push targets 10 ft on Eldritch Blast hit.' },
   { id: 'devils-sight', name: "Devil's Sight", level: 2, source: 'Eldritch Invocation', desc: 'See in normal and magical darkness up to 120 ft.' },
   { id: 'magical-cunning', name: 'Magical Cunning', level: 2, source: 'Warlock', desc: 'Esoteric rite (1 minute) regains expended Pact Magic slots up to half your maximum (round up). Once per Long Rest.' },
-  { id: 'pact-chain', name: 'Pact of the Chain', level: 3, source: 'Warlock', desc: 'Summon a familiar (Imp: Vex). 60-ft telepathy, invisibility, can deliver touch spells.' },
+  { id: 'pact-chain', name: 'Pact of the Chain', level: 3, source: 'Warlock', desc: 'Summon a familiar (Imp: Vex). 60-ft telepathy, invisibility, can deliver touch spells, and (unlike a normal familiar) can Attack on her own turn. Full stat block: Engine section → "Familiar — Vex".' },
   // Sorcerer
   { id: 'innate-sorcery', name: 'Innate Sorcery', level: 5, source: 'Sorcerer', desc: 'Twice per day, bonus action: +1 spell save DC and advantage on spell attack rolls for 1 minute.' },
   { id: 'font-of-magic', name: 'Font of Magic', level: 6, source: 'Sorcerer', desc: 'Sorcery points = Sorcerer level. Convert slots to points and back.' },
@@ -3891,6 +4025,23 @@ const SKILL_LIST = [
   { name: 'Performance', ability: 'cha', prof: true },
   { name: 'Persuasion', ability: 'cha' }
 ];
+
+// ============================================================
+// WEAPON MASTERY REFERENCE — 2024 PHB one-line rules text for each of the
+// 8 Weapon Mastery properties, so no one ever has to open the book mid-fight.
+// Used both for the collapsible glossary card and as tooltips wherever a
+// mastery name is displayed (equipped-weapon tags, gear-edit modal).
+// ============================================================
+const WEAPON_MASTERIES = {
+  Cleave: 'If you hit a creature with a melee attack using this weapon, you can make an additional attack roll with the same weapon (no extra action or bonus action needed) against a second creature within 5 feet of the first that is also within your weapon\'s reach. On a hit, the second creature takes the weapon\'s damage, but don\'t add your ability modifier to that damage unless it\'s negative. You can use this once per turn.',
+  Graze: 'If your attack roll with this weapon misses a creature, you can deal damage to that creature equal to the ability modifier you used to make the attack roll. This damage is of the weapon\'s damage type, and it can\'t be increased in any way.',
+  Nick: 'When you attack with this Light weapon and take the Attack action to make the extra attack the Light property grants, you can make that extra attack as part of the same action instead of as a Bonus Action. You can use this property only once per turn.',
+  Push: 'If you hit a creature with this weapon and it is Large or smaller, you can push it up to 10 feet straight away from you.',
+  Sap: 'If you hit a creature with this weapon, that creature has Disadvantage on its next attack roll before the start of your next turn.',
+  Slow: 'If you hit a creature with this weapon and deal damage, you can reduce that creature\'s Speed by 10 feet until the start of your next turn.',
+  Topple: 'If you hit a creature with this weapon, you can force it to make a Constitution saving throw (DC 8 + the ability modifier used for the attack + your Proficiency Bonus). On a failure, the creature has the Prone condition.',
+  Vex: 'If you hit a creature with this weapon, you gain Advantage on your next attack roll against that same creature before the end of your next turn.'
+};
 
 // ============================================================
 // GEAR LIBRARY — common armor, shields, weapons, magic items.
@@ -4055,7 +4206,9 @@ const DEFAULT_STATE = {
   innateSorceryUsed: 0,       // 0 / 1 / 2 (max uses = 2 / long rest)
   magicalCunningUsed: false,  // 1 / long rest
   heavenlyWingsUsed: false,   // 1 / long rest (the transformation itself)
+  healingHandsUsed: false,    // 1 / long rest (Aasimar species trait)
   hexbladesCurseUsed: false,  // 1 / short or long rest
+  luckPointsUsed: 0,          // 0-3 (Lucky feat, if chosen at L16); resets on long rest
   concentratingOn: null,      // spell name string, or null
   deathSavesSuccess: 0,       // 0-3
   deathSavesFail: 0,          // 0-3
@@ -4576,6 +4729,16 @@ function render() {
   // Weapon Attacks (auto-built from equipped weapons in state.gear)
   renderWeaponAttacks(level, stats, pb);
 
+  // Weapon Mastery Reference (static glossary, filled once — cheap to re-run)
+  const masteryRefBody = document.getElementById('mastery-reference-body');
+  if (masteryRefBody && !masteryRefBody.childElementCount) {
+    masteryRefBody.innerHTML = weaponMasteryGlossaryHtml();
+  }
+
+  // Familiar (Pact of the Chain, Warlock 3+)
+  const familiarCard = document.getElementById('familiar-card');
+  if (familiarCard) familiarCard.hidden = w < 3;
+
   // Healing Hands (PB d4s) & Celestial Revelation damage rider (PB radiant for Heavenly Wings)
   document.getElementById('healing-hands-dice').textContent = pb;
   document.getElementById('revelation-bonus').textContent = '+' + pb;
@@ -4993,6 +5156,35 @@ function renderCombatResources(level) {
     btn.textContent = state.heavenlyWingsUsed ? 'Used' : 'Available';
     btn.classList.toggle('used', !!state.heavenlyWingsUsed);
   } else { wingsRow.hidden = true; }
+
+  // Healing Hands (Aasimar species trait — always available from L1)
+  const healingHandsBtn = document.getElementById('healing-hands-toggle');
+  healingHandsBtn.textContent = state.healingHandsUsed ? 'Used' : 'Available';
+  healingHandsBtn.classList.toggle('used', !!state.healingHandsUsed);
+
+  // Luck Points (Lucky feat, only if chosen at L16 — gate the same way other
+  // conditional feat-driven UI checks state.alternates for the chosen option)
+  const luckRow = document.getElementById('resource-luck');
+  const luckyTaken = level >= 16 && (state.alternates['lvl16-feat'] || 'warcaster16') === 'lucky';
+  if (luckyTaken) {
+    luckRow.hidden = false;
+    const pipsContainer = document.getElementById('luck-pips');
+    pipsContainer.innerHTML = '';
+    const used = state.luckPointsUsed || 0;
+    const max = 3;
+    for (let i = 0; i < max; i++) {
+      const pip = document.createElement('div');
+      pip.className = 'pip' + (i < max - used ? ' filled' : '');
+      pip.title = `Luck Point ${i + 1}`;
+      pip.addEventListener('click', () => {
+        const u = state.luckPointsUsed || 0;
+        state.luckPointsUsed = (i < max - u) ? max - i : max - i - 1;
+        saveState();
+        renderCombatResources(state.level);
+      });
+      pipsContainer.appendChild(pip);
+    }
+  } else { luckRow.hidden = true; }
 
   // Hexblade's Curse (legacy XGE Hexblade subclass at warlock 1 — always available for this build)
   const curseBtn = document.getElementById('hexblade-curse-toggle');
@@ -5438,11 +5630,61 @@ function openCastPopover(spell, anchor) {
   if (IS_DM) return;
   const pop = document.getElementById('cast-popover');
   pop.innerHTML = '';
+  // Transient per-open selection — resets every time the popover opens.
+  const selectedMetamagic = new Set();
 
   const title = document.createElement('div');
   title.className = 'cast-popover-title';
   title.textContent = `Cast ${spell.name} with`;
   pop.appendChild(title);
+
+  // Metamagic toggles — only options Caelen actually knows (Font of Magic L6
+  // grants Quickened + Subtle; L14 adds a 3rd, see LEVEL_DATA[14].feat).
+  const knownMeta = getKnownMetamagicIds(state.level);
+  const metaRows = [];
+  let updateMetaAffordability = () => {};
+  if (knownMeta.length > 0) {
+    const metaWrap = document.createElement('div');
+    metaWrap.className = 'cast-popover-metamagic';
+    const label = document.createElement('div');
+    label.className = 'cast-popover-metamagic-label';
+    label.innerHTML = `Metamagic (<span id="cast-popover-sp-left">${state.sorceryPoints || 0}</span> SP available)`;
+    metaWrap.appendChild(label);
+    for (const id of knownMeta) {
+      const optDef = METAMAGIC_OPTIONS[id];
+      // Twinned Spell's cost is the spell's level (min 1), not a flat number.
+      const cost = id === 'twinned' ? Math.max(1, SPELL_LEVEL_ORDER[spell.level] || 1) : optDef.cost;
+      const row = document.createElement('label');
+      row.className = 'cast-popover-metamagic-option';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      const span = document.createElement('span');
+      span.textContent = `Apply ${optDef.name} (−${cost} SP)`;
+      row.appendChild(cb);
+      row.appendChild(span);
+      metaWrap.appendChild(row);
+      metaRows.push({ id, cost, cb });
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => {
+        if (cb.checked) selectedMetamagic.add(id); else selectedMetamagic.delete(id);
+        updateMetaAffordability();
+      });
+    }
+    pop.appendChild(metaWrap);
+
+    // Grey out (and disable) any not-yet-checked option that would exceed
+    // remaining Sorcery Points if added on top of what's already selected.
+    updateMetaAffordability = () => {
+      const spTotal = state.sorceryPoints || 0;
+      const selectedCost = [...selectedMetamagic].reduce((sum, id) => sum + (metaRows.find(r => r.id === id)?.cost || 0), 0);
+      for (const r of metaRows) {
+        r.cb.disabled = !r.cb.checked && (selectedCost + r.cost) > spTotal;
+      }
+      const spLeftEl = document.getElementById('cast-popover-sp-left');
+      if (spLeftEl) spLeftEl.textContent = Math.max(0, spTotal - selectedCost);
+    };
+    updateMetaAffordability();
+  }
 
   const tiers = getValidSlotTiers(spell, state.level);
   const usable = tiers.filter(t => (t.max - t.used) > 0);
@@ -5460,8 +5702,11 @@ function openCastPopover(spell, anchor) {
       opt.innerHTML = `<span>${t.label}</span><span class="tier-count">×${remaining}</span>`;
       opt.addEventListener('click', (e) => {
         e.stopPropagation();
+        const metaCost = [...selectedMetamagic].reduce((sum, id) => sum + (metaRows.find(r => r.id === id)?.cost || 0), 0);
+        if (metaCost > (state.sorceryPoints || 0)) return; // guarded by disabled checkboxes; belt-and-suspenders
         const finalize = () => {
           state.usedSlots[t.key] = (state.usedSlots[t.key] || 0) + 1;
+          if (metaCost > 0) state.sorceryPoints = Math.max(0, (state.sorceryPoints || 0) - metaCost);
           if (spell.concentration) state.concentratingOn = spell.name;
           saveState();
           closeCastPopover();
@@ -5598,7 +5843,14 @@ function renderClassFeatures(level) {
     const block = document.createElement('div');
     block.className = 'feature-block';
     block.setAttribute('data-level', f.level);
-    block.innerHTML = `<h4>${f.name}</h4><p><em>(${f.source})</em> ${f.desc}</p>`;
+    // Metamagic's known-options list grows at L14 — build it dynamically
+    // instead of using the static desc so the 3rd pick actually shows up.
+    let desc = f.desc;
+    if (f.id === 'metamagic') {
+      const known = getKnownMetamagicIds(level).map(id => METAMAGIC_OPTIONS[id].name);
+      desc = `Known: ${known.join(', ')}. Applied and paid for (Sorcery Points) at cast time via the Cast popover on a spell.`;
+    }
+    block.innerHTML = `<h4>${f.name}</h4><p><em>(${f.source})</em> ${desc}</p>`;
     container.appendChild(block);
   }
   if (hidden > 0) {
@@ -5719,7 +5971,7 @@ function renderWeaponAttacks(level, stats, pb) {
     const dmgStr = `${damageDie} + ${abilityMod + dmgBonus} ${damageType}`;
     const tagParts = [];
     if (attBonus || dmgBonus) tagParts.push(`<span class="weapon-tag-magic">Magic +${Math.max(attBonus, dmgBonus)}</span>`);
-    if (wpn.mastery) tagParts.push(`<span class="weapon-tag-mastery">${wpn.mastery}</span>`);
+    if (wpn.mastery) tagParts.push(`<span class="weapon-tag-mastery has-tip" title="${(WEAPON_MASTERIES[wpn.mastery] || '').replace(/"/g, '&quot;')}">${wpn.mastery}</span>`);
     if (wpn.quantity && wpn.quantity > 1) tagParts.push(`×${wpn.quantity}`);
     const block = document.createElement('div');
     block.className = 'weapon-attack-block';
@@ -6270,6 +6522,16 @@ document.getElementById('hp-info-btn').addEventListener('click', () => {
   );
 });
 
+document.getElementById('mastery-info-btn').addEventListener('click', () => {
+  showInfo('Weapon Mastery Reference', weaponMasteryGlossaryHtml());
+});
+
+function weaponMasteryGlossaryHtml() {
+  return Object.entries(WEAPON_MASTERIES).map(([name, text]) => `
+    <p class="spell-info-para" style="margin-bottom:0.8rem;"><strong style="color:var(--gold);font-family:'Cinzel',serif;letter-spacing:0.05em;">${name}.</strong> ${text}</p>
+  `).join('');
+}
+
 document.getElementById('inspiring-btn').addEventListener('click', () => {
   // Inspiring Leader: temp HP = character level + CHA mod. Temp HP doesn't
   // stack — taking the higher of current and incoming.
@@ -6296,6 +6558,12 @@ document.getElementById('magical-cunning-toggle').addEventListener('click', () =
 
 document.getElementById('heavenly-wings-toggle').addEventListener('click', () => {
   state.heavenlyWingsUsed = !state.heavenlyWingsUsed;
+  saveState();
+  renderCombatResources(state.level);
+});
+
+document.getElementById('healing-hands-toggle').addEventListener('click', () => {
+  state.healingHandsUsed = !state.healingHandsUsed;
   saveState();
   renderCombatResources(state.level);
 });
@@ -6416,7 +6684,10 @@ document.getElementById('long-rest-btn').addEventListener('click', () => {
   if (w >= 1) items.push("Refresh Hexblade's Curse");
   // Heavenly Wings is gated on the Aasimar feat pick — show generically.
   items.push("Refresh Heavenly Wings (Aasimar transformation)");
+  items.push('Refresh Healing Hands (Aasimar)');
   if (s >= 3) items.push('Refresh Tides of Chaos');
+  const luckyTakenForRest = state.level >= 16 && (state.alternates['lvl16-feat'] || 'warcaster16') === 'lucky';
+  if (luckyTakenForRest) items.push('Refill Luck Points to 3 (Lucky feat)');
   items.push('Reset death saves');
   const body = `
     <p>This will:</p>
@@ -6432,8 +6703,10 @@ document.getElementById('long-rest-btn').addEventListener('click', () => {
     state.innateSorceryUsed = 0;
     state.magicalCunningUsed = false;
     state.heavenlyWingsUsed = false;
+    state.healingHandsUsed = false;
     state.hexbladesCurseUsed = false;
     state.tidesOfChaosUsed = false;
+    state.luckPointsUsed = 0;
     state.deathSavesSuccess = 0;
     state.deathSavesFail = 0;
     // Hit Dice: regain up to half character level (min 1) total. Refill
