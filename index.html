@@ -2049,6 +2049,9 @@ body::before {
   letter-spacing: 0.1em;
 }
 .gear-row .gear-actions button:hover { background: rgba(74, 138, 115, 0.15); border-color: var(--gold); }
+.gear-row .gear-actions button.gear-use-btn { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.gear-row .gear-actions button.gear-use-btn:hover { background: var(--gold-bright); }
+.gear-row .gear-actions button.gear-use-btn:disabled { opacity: 0.35; cursor: not-allowed; background: transparent; color: var(--parchment-dim); border-color: var(--gold-tarnish); }
 .gear-row .gear-charges { display: flex; gap: 0.2rem; margin-top: 0.2rem; }
 .gear-row .gear-charges-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem; flex-wrap: wrap; }
 .gear-row .gear-charge-btn {
@@ -3125,14 +3128,14 @@ body.dm-mode .dm-hide { display: none; }
     <summary><h2 class="section-title">Carry &amp; Kit</h2></summary>
     <details class="card collapsible-card" id="gear-card" open>
       <summary>
-        <h3>Gear
+        <h3>Gear &amp; Consumables
           <span id="gear-attunement-counter" style="margin-left:0.8rem;margin-right:2rem;font-family:'Cinzel',serif;font-size:0.65rem;font-weight:400;letter-spacing:0.18em;text-transform:uppercase;color:var(--silver-crack);vertical-align:middle;"></span>
-          <button class="header-action" id="gear-add-btn">+ Add Gear</button>
+          <button class="header-action" id="gear-add-btn">+ Add Item</button>
         </h3>
       </summary>
       <div class="collapsible-body">
         <div class="gear-search-wrap">
-          <input id="gear-search" type="text" class="gear-search" placeholder="Search gear by name, type, or notes…" autocomplete="off">
+          <input id="gear-search" type="text" class="gear-search" placeholder="Search items by name, type, or notes…" autocomplete="off">
           <button class="gear-search-clear" id="gear-search-clear" title="Clear search" hidden>×</button>
         </div>
         <div id="gear-list" class="gear-list"></div>
@@ -3318,7 +3321,7 @@ body.dm-mode .dm-hide { display: none; }
 <div class="modal-overlay" id="gear-overlay" hidden>
   <div class="modal" style="max-width:720px;">
     <button class="modal-close" id="gear-close" aria-label="Close">×</button>
-    <div class="modal-title" id="gear-modal-title">Add Gear</div>
+    <div class="modal-title" id="gear-modal-title">Add Item</div>
     <div class="gear-modal-tabs" id="gear-modal-tabs">
       <button id="gear-tab-library" class="active">From Library</button>
       <button id="gear-tab-custom">Custom Entry</button>
@@ -3344,6 +3347,7 @@ body.dm-mode .dm-hide { display: none; }
               <option value="wand">Wand</option>
               <option value="rod">Rod</option>
               <option value="wondrous">Wondrous</option>
+              <option value="consumable">Consumable (Potion/Scroll)</option>
               <option value="misc">Misc / Flavor</option>
             </select>
           </div>
@@ -3431,6 +3435,12 @@ body.dm-mode .dm-hide { display: none; }
               </select>
             </div>
           </div>
+        </div>
+
+        <div id="gear-form-consumable-fields" hidden>
+          <div class="section-h">Consumable</div>
+          <div><label>Heal Dice (e.g. 2d4+2 — leave blank for non-healing effects)</label><input id="gear-form-heal-dice" type="text" placeholder="2d4+2"></div>
+          <p class="hint" style="margin-top:0.3rem;font-size:0.78rem;font-style:italic;color:var(--parchment-dim);">Non-healing effects (Invisibility, Speed, etc.) — describe what it does in Notes below. The Use button will show that text and let you spend one.</p>
         </div>
 
         <div class="section-h">Magic Effects (apply when equipped / attuned)</div>
@@ -4164,7 +4174,23 @@ const GEAR_LIBRARY = [
   { name: 'Goggles of Night',          type: 'wondrous', weight: 0, rarity: 'Uncommon', senses: 'Darkvision 60 ft', notes: 'Darkvision 60 ft (auto-applied to the Senses list while worn).' },
   // ----- WANDS -----
   { name: 'Wand of Magic Missiles',    type: 'wand',     weight: 1, requiresAttunement: false, chargesMax: 7, chargesRecover: 'dawn', rarity: 'Uncommon', notes: 'Expend N charges to cast Magic Missile at level N (1-7). Recover 1d6+1 charges at dawn. Roll d20 if last charge used: 1 = wand crumbles.' },
-  { name: 'Wand of Web',               type: 'wand',     weight: 1, requiresAttunement: true, chargesMax: 7, chargesRecover: 'dawn', rarity: 'Uncommon', notes: 'Cast Web (DC 15). Recover 1d6+1 charges at dawn.' }
+  { name: 'Wand of Web',               type: 'wand',     weight: 1, requiresAttunement: true, chargesMax: 7, chargesRecover: 'dawn', rarity: 'Uncommon', notes: 'Cast Web (DC 15). Recover 1d6+1 charges at dawn.' },
+  // ----- CONSUMABLES (potions) -----
+  { name: 'Potion of Healing',           type: 'consumable', weight: 0.5, rarity: 'Common',    healDice: '2d4+2' },
+  { name: 'Potion of Greater Healing',   type: 'consumable', weight: 0.5, rarity: 'Uncommon',  healDice: '4d4+4' },
+  { name: 'Potion of Superior Healing',  type: 'consumable', weight: 0.5, rarity: 'Rare',       healDice: '8d4+8' },
+  { name: 'Potion of Supreme Healing',   type: 'consumable', weight: 0.5, rarity: 'Very Rare',  healDice: '10d4+20' },
+  { name: 'Antitoxin',                   type: 'consumable', weight: 0,   rarity: 'Common',    notes: 'Drink before a Poison saving throw within the next hour to gain Advantage on that save.' },
+  { name: 'Potion of Fire Breath',       type: 'consumable', weight: 0.5, rarity: 'Uncommon',  notes: 'As a Magic action, exhale fire at a target within 30 ft: 4d6 Fire damage (DC 13 DEX save for half). One use.' },
+  { name: 'Potion of Climbing',          type: 'consumable', weight: 0.5, rarity: 'Common',    notes: 'For 1 hour: Climbing Speed equal to your Speed, and Advantage on STR (Athletics) checks to climb.' },
+  { name: 'Potion of Growth',            type: 'consumable', weight: 0.5, rarity: 'Uncommon',  notes: 'For 1d4 hours, become Large (if room): Advantage on STR checks/saves, +1d4 damage on weapon/unarmed hits. Gear grows with you; drink again to end early.' },
+  { name: 'Potion of Diminution',        type: 'consumable', weight: 0.5, rarity: 'Rare',      notes: 'For 1d4 hours, shrink 1 size (min Tiny), −1d4 to weapon/unarmed damage (min 1). Drink again to end early.' },
+  { name: 'Potion of Invisibility',      type: 'consumable', weight: 0.5, rarity: 'Very Rare', notes: 'For 1 hour or until you attack/cast a spell, you have the Invisible condition (also makes worn/carried gear invisible).' },
+  { name: 'Potion of Speed',             type: 'consumable', weight: 0.5, rarity: 'Very Rare', notes: 'For 1 minute, as the Haste spell: Speed doubles, +2 AC, Advantage on DEX saves, extra action each turn (Attack/Dash/Disengage/Hide/Utilize). 1 turn of Lethargy after it ends.' },
+  { name: 'Potion of Water Breathing',   type: 'consumable', weight: 0.5, rarity: 'Uncommon',  notes: 'Breathe underwater for 1 hour.' },
+  { name: 'Potion of Animal Friendship', type: 'consumable', weight: 0.5, rarity: 'Uncommon',  notes: 'As the Animal Friendship spell (DC 13) for 1 hour, affecting one Beast within 10 ft when you drink it.' },
+  { name: 'Potion of Resistance',        type: 'consumable', weight: 0.5, rarity: 'Uncommon',  notes: 'Resistance to one damage type for 1 hour (type set on the potion — note it when you get one).' },
+  { name: 'Potion of Fire Giant Strength', type: 'consumable', weight: 0.5, rarity: 'Very Rare', notes: 'For 1 hour, STR becomes 25 (no effect if already ≥25).' }
 ];
 
 
@@ -6066,6 +6092,54 @@ function totalAttunedCount() {
     + (state.magicItems || []).filter(mi => mi.attuned).length;
 }
 
+// Parses simple dice strings like "2d4+2" / "8d4+8" / "1d8" into
+// { count, sides, mod, min, max, avg }. Returns null if unparseable.
+function parseDiceString(str) {
+  const m = /^\s*(\d+)\s*d\s*(\d+)\s*(?:([+-])\s*(\d+))?\s*$/i.exec(str || '');
+  if (!m) return null;
+  const count = parseInt(m[1], 10), sides = parseInt(m[2], 10);
+  const mod = m[3] ? (m[3] === '-' ? -1 : 1) * parseInt(m[4], 10) : 0;
+  return { count, sides, mod, min: count + mod, max: count * sides + mod, avg: Math.round(count * (sides + 1) / 2 + mod) };
+}
+
+// Using a consumable: potions with healDice prompt the player to roll their
+// physical dice and enter the total, then apply it to HP and spend one from
+// the stack. Everything else (Invisibility, Speed, etc.) just shows the
+// effect text from Notes and spends one on confirm — no separate roll needed.
+function useConsumable(g) {
+  const dice = parseDiceString(g.healDice);
+  if (dice) {
+    const stats = computeStats(state.level);
+    const maxHp = computeHP(state.level, stats);
+    const currentHp = state.hpCurrent == null ? maxHp : state.hpCurrent;
+    showConfirm(`Drink ${g.name}`,
+      `<p>Roll <strong>${g.healDice}</strong> on your physical dice and enter the total below.</p>
+       <div style="margin:0.8rem 0;">
+         <label style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:0.4rem;">Roll result (${dice.min}–${dice.max})</label>
+         <input type="number" id="consumable-roll-input" value="${dice.avg}" min="${dice.min}" max="${dice.max}" style="width:5rem;text-align:center;padding:0.3rem;border:1px solid var(--gold-tarnish);background:rgba(255,255,255,0.6);color:var(--parchment);font-family:'Cinzel',serif;font-size:1.1rem;">
+         <span style="margin-left:0.6rem;color:var(--parchment-aged);font-family:'EB Garamond',serif;font-style:italic;">HP recovered</span>
+       </div>
+       <p style="font-size:0.85rem;color:var(--parchment-aged);font-style:italic;">Current HP: ${currentHp} / ${maxHp}. Healing caps at max.${g.notes ? '<br>' + g.notes : ''}</p>`,
+      () => {
+        const roll = Math.max(dice.min, Math.min(dice.max, parseInt(document.getElementById('consumable-roll-input').value, 10) || dice.avg));
+        state.hpCurrent = Math.min(maxHp, currentHp + roll);
+        g.quantity = Math.max(0, (g.quantity || 1) - 1);
+        saveState();
+        render();
+      },
+      { okLabel: 'Drink & Heal' });
+  } else {
+    showConfirm(`Use ${g.name}`,
+      `<p>${g.notes || 'Spend one use of this item.'}</p>`,
+      () => {
+        g.quantity = Math.max(0, (g.quantity || 1) - 1);
+        saveState();
+        render();
+      },
+      { okLabel: 'Use (−1)' });
+  }
+}
+
 function renderGear() {
   const list = document.getElementById('gear-list');
   if (!list) return;
@@ -6083,11 +6157,11 @@ function renderGear() {
     : allGear;
   list.innerHTML = '';
   if (gear.length === 0) {
-    if (filter) { list.innerHTML = `<div class="gear-empty">No gear matches "${filter}". <button class="link-btn" id="gear-search-reset">clear search</button></div>`; const r = document.getElementById('gear-search-reset'); if (r) r.addEventListener('click', () => { searchEl.value = ''; renderGear(); }); return; }
-    list.innerHTML = '<div class="gear-empty">No gear yet. Click <strong>+ Add Gear</strong> to add armor, weapons, or magic items.</div>';
+    if (filter) { list.innerHTML = `<div class="gear-empty">No items match "${filter}". <button class="link-btn" id="gear-search-reset">clear search</button></div>`; const r = document.getElementById('gear-search-reset'); if (r) r.addEventListener('click', () => { searchEl.value = ''; renderGear(); }); return; }
+    list.innerHTML = '<div class="gear-empty">Nothing here yet. Click <strong>+ Add Item</strong> to add armor, weapons, potions, or magic items.</div>';
   }
   // Sort: equipped first (armor → shield → weapon), then by type, then by name
-  const typeOrder = { armor: 0, shield: 1, weapon: 2, cloak: 3, ring: 4, amulet: 5, boots: 6, wondrous: 7, wand: 8, rod: 9, misc: 99 };
+  const typeOrder = { armor: 0, shield: 1, weapon: 2, cloak: 3, ring: 4, amulet: 5, boots: 6, wondrous: 7, consumable: 8, wand: 9, rod: 10, misc: 99 };
   const sorted = [...gear].sort((a, b) => {
     if (a.equipped !== b.equipped) return a.equipped ? -1 : 1;
     const ta = typeOrder[a.type] ?? 50, tb = typeOrder[b.type] ?? 50;
@@ -6098,12 +6172,13 @@ function renderGear() {
     const row = document.createElement('div');
     row.className = 'gear-row' + (g.equipped ? ' equipped' : '');
     const metaParts = [];
-    if (g.quantity && g.quantity > 1) metaParts.push(`×${g.quantity}`);
+    if (g.quantity && (g.quantity > 1 || g.type === 'consumable')) metaParts.push(`×${g.quantity}`);
     if (g.weight) metaParts.push(`${g.weight} lb`);
     if (g.rarity && g.rarity !== 'Mundane') metaParts.push(g.rarity);
     if (g.type === 'armor' && g.armorBase) metaParts.push(`AC ${g.armorBase} (${g.armorType || '?'})`);
     if (g.type === 'weapon' && g.damage) metaParts.push(`${g.damage} ${g.damageType || ''}`);
     if (g.type === 'shield' && g.acBonus) metaParts.push(`+${g.acBonus} AC`);
+    if (g.type === 'consumable' && g.healDice) metaParts.push(`heals ${g.healDice}`);
     const effects = [];
     if (g.acBonus && g.type !== 'shield' && g.type !== 'armor') effects.push(`+${g.acBonus} AC`);
     if (g.saveBonus) effects.push(`+${g.saveBonus} saves`);
@@ -6118,18 +6193,23 @@ function renderGear() {
         <button class="gear-charge-btn" data-charge-act="restore" title="Restore 1 charge">+1</button>
         <button class="gear-charge-btn" data-charge-act="full" title="Refill all charges">refill</button>
       </div>` : '';
-    // Equip pill — shown for every item. For armor/shield/weapon/magic-effect items
-    // it drives mechanical stats; for misc items it's just a 'worn/carried' marker.
+    // Equip pill — shown for every non-consumable item. For armor/shield/weapon/
+    // magic-effect items it drives mechanical stats; for misc items it's just a
+    // 'worn/carried' marker. Potions/scrolls aren't "worn", so they skip this.
     const mechanical = ['armor', 'shield', 'weapon'].includes(g.type)
                     || g.acBonus || g.saveBonus || g.attackBonus || g.damageBonus
                     || g.hpBonus || g.speedBonus || g.statOverride;
     const equipLabel = mechanical
       ? (g.equipped ? '✓ Equipped' : 'Equip')
       : (g.equipped ? '✓ Worn' : 'Wear');
-    const equipPill = `<button class="gear-toggle equip ${g.equipped ? 'on' : ''}" title="${mechanical ? 'Equip to apply this item\'s mechanical effects (AC, attacks, etc.)' : 'Mark as currently worn / carried (no mechanical effect for misc items)'}">${equipLabel}</button>`;
+    const equipPill = g.type === 'consumable' ? '' : `<button class="gear-toggle equip ${g.equipped ? 'on' : ''}" title="${mechanical ? 'Equip to apply this item\'s mechanical effects (AC, attacks, etc.)' : 'Mark as currently worn / carried (no mechanical effect for misc items)'}">${equipLabel}</button>`;
     // Attune pill — only shown for items that require attunement.
     const attunePill = g.requiresAttunement
       ? `<button class="gear-toggle attune ${g.attuned ? 'on' : ''}" title="Attune (3 max — magic effects only apply when attuned)">${g.attuned ? '✦ Attuned' : 'Attune'}</button>`
+      : '';
+    const empty = g.type === 'consumable' && !(g.quantity > 0);
+    const useBtn = g.type === 'consumable'
+      ? `<button class="gear-use-btn" ${empty ? 'disabled' : ''}>${empty ? 'Empty' : 'Use'}</button>`
       : '';
     row.innerHTML = `
       <div class="gear-toggles">${equipPill}${attunePill}</div>
@@ -6141,10 +6221,13 @@ function renderGear() {
         ${g.notes ? `<div class="gear-meta" style="font-style:italic;">${g.notes}</div>` : ''}
       </div>
       <div class="gear-actions">
+        ${useBtn}
         <button class="gear-edit-btn">Edit</button>
         <button class="gear-del-btn">Delete</button>
       </div>
     `;
+    const useButton = row.querySelector('.gear-use-btn');
+    if (useButton) useButton.addEventListener('click', () => useConsumable(g));
     const equipBtn = row.querySelector('.gear-toggle.equip');
     if (equipBtn) equipBtn.addEventListener('click', () => {
       g.equipped = !g.equipped;
@@ -6202,7 +6285,7 @@ let _gearEditingId = null;
 
 function openGearModal(editGear) {
   _gearEditingId = editGear ? editGear.id : null;
-  document.getElementById('gear-modal-title').textContent = editGear ? 'Edit Gear' : 'Add Gear';
+  document.getElementById('gear-modal-title').textContent = editGear ? 'Edit Item' : 'Add Item';
   document.getElementById('gear-overlay').hidden = false;
   // Reset to library tab unless editing (then jump to custom panel pre-filled)
   if (editGear) {
@@ -6218,11 +6301,11 @@ function openGearModal(editGear) {
 function clearGearForm() {
   const fields = ['name', 'qty', 'weight', 'armor-base', 'armor-strreq', 'weapon-damage', 'weapon-properties',
                   'acbonus', 'savebonus', 'hpbonus', 'attackbonus', 'dmgbonus', 'speedbonus',
-                  'str-override', 'con-override', 'int-override', 'charges-max', 'charges-used', 'notes'];
+                  'str-override', 'con-override', 'int-override', 'charges-max', 'charges-used', 'notes', 'heal-dice'];
   for (const f of fields) {
     const el = document.getElementById('gear-form-' + f);
     if (el) el.value = (f === 'qty' ? '1' : (f === 'weight' ? '0' : '0'));
-    if (el && (f === 'name' || f === 'weapon-damage' || f === 'weapon-properties' || f === 'notes')) el.value = '';
+    if (el && (f === 'name' || f === 'weapon-damage' || f === 'weapon-properties' || f === 'notes' || f === 'heal-dice')) el.value = '';
   }
   document.getElementById('gear-form-type').value = 'misc';
   document.getElementById('gear-form-attune').checked = false;
@@ -6267,6 +6350,7 @@ function fillGearFormFrom(g) {
   document.getElementById('gear-form-charges-used').value = g.chargesUsed || 0;
   document.getElementById('gear-form-charges-recover').value = g.chargesRecover || '';
   document.getElementById('gear-form-notes').value = g.notes || '';
+  document.getElementById('gear-form-heal-dice').value = g.healDice || '';
   updateGearFormFieldsForType();
 }
 
@@ -6274,6 +6358,7 @@ function updateGearFormFieldsForType() {
   const t = document.getElementById('gear-form-type').value;
   document.getElementById('gear-form-armor-fields').hidden = (t !== 'armor');
   document.getElementById('gear-form-weapon-fields').hidden = (t !== 'weapon');
+  document.getElementById('gear-form-consumable-fields').hidden = (t !== 'consumable');
 }
 
 function populateGearLibraryGrid(filter) {
@@ -6288,6 +6373,7 @@ function populateGearLibraryGrid(filter) {
     const metaParts = [];
     if (lib.type === 'armor' && lib.armorBase) metaParts.push(`AC ${lib.armorBase}`);
     if (lib.type === 'weapon' && lib.damage) metaParts.push(`${lib.damage} ${lib.damageType || ''}`);
+    if (lib.type === 'consumable' && lib.healDice) metaParts.push(`heals ${lib.healDice}`);
     if (lib.acBonus) metaParts.push(`+${lib.acBonus} AC`);
     if (lib.saveBonus) metaParts.push(`+${lib.saveBonus} saves`);
     if (lib.attackBonus) metaParts.push(`+${lib.attackBonus} hit / +${lib.damageBonus || 0} dmg`);
@@ -6344,6 +6430,10 @@ function saveGearForm() {
     item.ability = document.getElementById('gear-form-weapon-ability').value;
     item.properties = document.getElementById('gear-form-weapon-properties').value.trim();
     item.mastery = document.getElementById('gear-form-weapon-mastery').value;
+  }
+  if (t === 'consumable') {
+    const hd = document.getElementById('gear-form-heal-dice').value.trim();
+    if (hd) item.healDice = hd;
   }
   const num = (id) => parseInt(document.getElementById(id).value, 10) || 0;
   const acB = num('gear-form-acbonus'), saveB = num('gear-form-savebonus'),
