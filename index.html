@@ -2052,6 +2052,20 @@ body::before {
 .gear-row .gear-actions button.gear-use-btn { background: var(--gold); color: var(--ink); border-color: var(--gold); }
 .gear-row .gear-actions button.gear-use-btn:hover { background: var(--gold-bright); }
 .gear-row .gear-actions button.gear-use-btn:disabled { opacity: 0.35; cursor: not-allowed; background: transparent; color: var(--parchment-dim); border-color: var(--gold-tarnish); }
+.gear-row .gear-actions select.gear-give-select {
+  background: transparent;
+  border: 1px solid var(--gold-tarnish);
+  color: var(--gold);
+  padding: 0.25rem 0.4rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  max-width: 6.5rem;
+}
+.gear-row .gear-actions select.gear-give-select:hover { border-color: var(--gold); }
+.gear-row .gear-actions select.gear-give-select option { background: var(--ink-deep); color: var(--parchment); }
 .gear-row .gear-charges { display: flex; gap: 0.2rem; margin-top: 0.2rem; }
 .gear-row .gear-charges-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem; flex-wrap: wrap; }
 .gear-row .gear-charge-btn {
@@ -4427,6 +4441,48 @@ const ROW_ID = 'c9dbc72f-beed-4c2b-8d67-03dce25b0f7a';
 const SB_REST = `https://${SUPABASE_PROJECT}.supabase.co/rest/v1/character_sheets`;
 const SB_AUTH = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
 
+// ============================================================
+// CROSS-CHARACTER ITEM TRANSFERS (shared `item_transfers` table)
+// ============================================================
+// Same Supabase project, same auth, different table. Lets a player hand a
+// gear item to another party member's sheet without a shared inventory —
+// each sheet stays its own independent row in `character_sheets`.
+const SB_REST_TRANSFERS = `https://${SUPABASE_PROJECT}.supabase.co/rest/v1/item_transfers`;
+const FROM_NAME = 'Caelen';
+const PARTY_MEMBERS = [
+  { name: 'Rivet',   rowId: 'dcb7e8f3-78c1-425e-bdaa-b4f08d416053' },
+  { name: 'Haldeyr', rowId: '2f4ce1a7-0be9-4830-acdb-1cfa0765cb98' },
+  { name: 'Dampe',   rowId: '6976359e-5cbb-4629-b2ff-ec7bcf5a4c5d' }
+];
+
+async function postItemTransfer(toRowId, item) {
+  const r = await fetch(SB_REST_TRANSFERS, {
+    method: 'POST',
+    headers: { ...SB_AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({ from_row_id: ROW_ID, from_name: FROM_NAME, to_row_id: toRowId, item })
+  });
+  if (!r.ok) throw new Error(`transfer post ${r.status}: ${await r.text()}`);
+  const rows = await r.json();
+  return rows[0];
+}
+
+async function fetchPendingTransfers() {
+  const r = await fetch(`${SB_REST_TRANSFERS}?to_row_id=eq.${ROW_ID}&claimed_at=is.null`, { headers: SB_AUTH });
+  if (!r.ok) throw new Error(`transfer fetch ${r.status}`);
+  return await r.json();
+}
+
+async function claimTransfer(transferId) {
+  const r = await fetch(`${SB_REST_TRANSFERS}?id=eq.${transferId}`, {
+    method: 'PATCH',
+    headers: { ...SB_AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({ claimed_at: new Date().toISOString() })
+  });
+  if (!r.ok) throw new Error(`transfer claim ${r.status}: ${await r.text()}`);
+  const rows = await r.json();
+  return rows[0];
+}
+
 // DM view: read-only, polls the cloud every 5s. Activated with ?view=dm.
 // IS_DM is hoisted near the top of the script (above loadState/migration).
 // Re-apply dm-mode class here in case <body> wasn't ready when the early line ran.
@@ -6211,6 +6267,13 @@ function renderGear() {
     const useBtn = g.type === 'consumable'
       ? `<button class="gear-use-btn" ${empty ? 'disabled' : ''}>${empty ? 'Empty' : 'Use'}</button>`
       : '';
+    // Give → picker: hand this item off to another party member's sheet via
+    // the shared item_transfers table. Options are the other 3 party rows.
+    const giveOptions = PARTY_MEMBERS.map(p => `<option value="${p.rowId}">${p.name}</option>`).join('');
+    const giveSelect = `<select class="gear-give-select" title="Give this item to another party member">
+        <option value="">Give →</option>
+        ${giveOptions}
+      </select>`;
     row.innerHTML = `
       <div class="gear-toggles">${equipPill}${attunePill}</div>
       <div class="gear-main">
@@ -6222,12 +6285,27 @@ function renderGear() {
       </div>
       <div class="gear-actions">
         ${useBtn}
+        ${giveSelect}
         <button class="gear-edit-btn">Edit</button>
         <button class="gear-del-btn">Delete</button>
       </div>
     `;
     const useButton = row.querySelector('.gear-use-btn');
     if (useButton) useButton.addEventListener('click', () => useConsumable(g));
+    const giveSelectEl = row.querySelector('.gear-give-select');
+    if (giveSelectEl) giveSelectEl.addEventListener('change', () => {
+      const targetId = giveSelectEl.value;
+      giveSelectEl.value = ''; // reset the picker immediately regardless of outcome
+      if (!targetId) return;
+      const target = PARTY_MEMBERS.find(p => p.rowId === targetId);
+      if (!target) return;
+      const qtyNote = (g.quantity && g.quantity > 1)
+        ? ' One unit will be sent; the rest stays with you.'
+        : ' It will be removed from your gear.';
+      showConfirm(`Give ${g.name} to ${target.name}?`,
+        `<p>This sends "${g.name}" to ${target.name}'s sheet.${qtyNote}</p>`,
+        () => giveGearItem(g, target));
+    });
     const equipBtn = row.querySelector('.gear-toggle.equip');
     if (equipBtn) equipBtn.addEventListener('click', () => {
       g.equipped = !g.equipped;
@@ -6278,6 +6356,66 @@ function renderGear() {
     counter.textContent = `Attuned: ${attCount} / 3`;
     counter.style.color = attCount >= 3 ? 'var(--silver-crack)' : 'var(--parchment-aged)';
   }
+}
+
+// Give a gear item away to another party member's sheet via the shared
+// item_transfers table. Posts the transfer first; only removes/decrements the
+// item locally once the POST succeeds, so a failed transfer (offline, or the
+// item_transfers table not created yet) never loses the player's item.
+async function giveGearItem(g, target) {
+  const itemToSend = { ...g, quantity: 1, equipped: false, attuned: false };
+  try {
+    await postItemTransfer(target.rowId, itemToSend);
+  } catch (e) {
+    console.error('item transfer failed', e);
+    showInfo('Transfer Failed', `<p>Could not send "${g.name}" to ${target.name}. Check your connection and try again — nothing was removed from your gear.</p>`);
+    return;
+  }
+  if (g.quantity && g.quantity > 1) {
+    g.quantity -= 1;
+  } else {
+    state.gear = (state.gear || []).filter(x => x.id !== g.id);
+  }
+  saveState();
+  render();
+}
+
+// Show a combined "Accept All" modal for pending item transfers addressed to
+// this character (checked once per page load, from initCloudSync). A single
+// combined accept is simpler than a per-item button list and fits the
+// existing single-callback showConfirm pattern; declining just leaves the
+// transfers unclaimed so they're offered again next load.
+function showTransferInbox(pending) {
+  const itemsHtml = pending.map(t => {
+    const itemName = escapeForSpellInfo((t.item && t.item.name) || 'Unknown item');
+    const fromName = escapeForSpellInfo(t.from_name || 'a party member');
+    return `<li>🎁 <strong>${itemName}</strong> from ${fromName}</li>`;
+  }).join('');
+  showConfirm('Incoming Gifts',
+    `<p>Waiting for you:</p><ul style="line-height:1.7;">${itemsHtml}</ul>`,
+    () => acceptAllTransfers(pending),
+    { okLabel: 'Accept All' });
+}
+
+// Adds each pending transfer's item to state.gear (with a fresh id so it
+// can't collide with an existing gear entry) and marks it claimed. If the
+// claim PATCH fails for one item, the item still lands in local gear — it's
+// simply offered again (harmlessly re-added would be the worse outcome, but
+// re-claiming is idempotent-ish here) next load rather than lost.
+async function acceptAllTransfers(pending) {
+  state.gear = state.gear || [];
+  for (let i = 0; i < pending.length; i++) {
+    const t = pending[i];
+    const item = { ...(t.item || {}), id: 'gear-' + Date.now() + '-' + i + '-' + Math.floor(Math.random() * 9999) };
+    state.gear.push(item);
+    try {
+      await claimTransfer(t.id);
+    } catch (e) {
+      console.error('claim transfer failed', e);
+    }
+  }
+  saveState();
+  render();
 }
 
 // Currently-editing gear id (null = adding new)
@@ -7158,6 +7296,20 @@ render();
     console.error('cloud load failed', e);
     setLoadedFrom(hasLocal ? 'local' : 'defaults');
     setCloudStatus('error', 'Cloud: offline');
+  }
+
+  // Check for gifts from other party members, once per load. Kept as its own
+  // try/catch (separate from the state-sync try above) so a failure here
+  // doesn't flip the cloud status indicator to "offline" — it's a secondary
+  // check, not the primary sync. Skipped in DM view: the DM shouldn't be
+  // claiming gifts on Caelen's behalf.
+  if (!IS_DM) {
+    try {
+      const pending = await fetchPendingTransfers();
+      if (pending && pending.length) showTransferInbox(pending);
+    } catch (e) {
+      console.error('transfer inbox check failed', e);
+    }
   }
 })();
 
