@@ -10,3 +10,6 @@ build/
 
 # Local reference files (not deployed)
 warlock_sorcerer_spells.txt
+
+# Claude Code local config
+.claude/
