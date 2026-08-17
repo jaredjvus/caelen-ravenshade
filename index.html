@@ -2582,6 +2582,54 @@ body::before {
   min-height: 1.1rem;
 }
 
+/* STICKY VITALS BAR — appears once the main defense row scrolls out of view */
+.vitals-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6rem;
+  flex-wrap: wrap;
+  background: linear-gradient(180deg, var(--ink) 0%, rgba(10,6,8,0.97) 100%);
+  border-bottom: 1px solid var(--gold-tarnish);
+  padding: 0.5rem 1rem;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.vitals-bar.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+body.dm-mode .vitals-bar.visible { top: 2.4rem; } /* sit below the dm-banner */
+.vitals-bar .vb-nav-btn {
+  background: none; border: 1px solid var(--gold-tarnish); color: var(--gold);
+  font-size: 0.85rem; padding: 0.2rem 0.6rem; border-radius: 3px; cursor: pointer;
+  font-family: 'Cinzel', serif; line-height: 1.4;
+}
+.vitals-bar .vb-nav-btn:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+.vitals-bar .vb-item { display: flex; align-items: center; gap: 0.5rem; font-family: 'Cinzel', serif; letter-spacing: 0.04em; }
+.vitals-bar .vb-label { font-size: 0.62rem; text-transform: uppercase; color: var(--gold); opacity: 0.85; }
+.vitals-bar .vb-value { font-size: 1rem; color: var(--parchment); }
+.vitals-bar .vb-btn {
+  background: none; border: 1px solid var(--gold-tarnish); color: var(--parchment-aged);
+  font-size: 0.75rem; width: 1.5rem; height: 1.5rem; border-radius: 3px; cursor: pointer;
+  font-family: 'EB Garamond', serif; line-height: 1;
+}
+.vitals-bar .vb-btn:hover { border-color: var(--gold-bright); color: var(--gold); }
+.vitals-bar .vb-chip {
+  font-size: 0.68rem; padding: 0.2rem 0.6rem; border: 1px solid var(--gold-tarnish);
+  border-radius: 12px; color: var(--parchment-aged); text-transform: uppercase; letter-spacing: 0.04em;
+}
+.vitals-bar .vb-chip.active { border-color: var(--blood-bright); color: var(--blood-bright); background: rgba(107,26,31,0.14); }
+.vitals-bar .vb-chip.curse-used { opacity: 0.5; }
+body.dm-mode .vitals-bar .vb-btn { display: none; }
+@media (max-width: 640px) {
+  .vitals-bar { gap: 0.8rem; padding: 0.4rem 0.6rem; }
+  .vitals-bar .vb-label { display: none; }
+}
+
 /* DM (read-only) view */
 .dm-banner {
   display: none;
@@ -2728,6 +2776,26 @@ body.dm-mode .dm-hide { display: none; }
 <body>
 
 <div class="dm-banner">DM View · Read-only · Updates every 5s</div>
+
+<div class="vitals-bar" id="vitals-bar" aria-label="Quick vitals">
+  <button class="vb-nav-btn" id="vb-nav-btn" type="button" title="Jump to section" aria-label="Jump to section">☰</button>
+  <div class="vb-item">
+    <span class="vb-label">HP</span>
+    <span class="vb-value"><span id="vb-hp-current">9</span>/<span id="vb-hp-max">9</span></span>
+    <button class="vb-btn" id="vb-hp-damage-btn" type="button" title="Apply damage">−</button>
+    <button class="vb-btn" id="vb-hp-heal-btn" type="button" title="Apply healing">+</button>
+  </div>
+  <div class="vb-item">
+    <span class="vb-label">AC</span>
+    <span class="vb-value" id="vb-ac-val">12</span>
+  </div>
+  <div class="vb-item">
+    <span class="vb-chip" id="vb-conc-chip" hidden>Conc. <span id="vb-conc-name"></span></span>
+  </div>
+  <div class="vb-item">
+    <span class="vb-chip" id="vb-curse-chip" hidden>Curse <span id="vb-curse-status">Available</span></span>
+  </div>
+</div>
 
 <div class="container">
 
@@ -4329,6 +4397,7 @@ const DEFAULT_STATE = {
   heroicInspiration: false,   // 2024 PHB universal mechanic; advantage on one d20 roll
   tidesOfChaosUsed: false,    // Wild Magic sorc 3 feature; resets on long rest OR DM-triggered surge
   lastSurgeRoll: null,        // 1-100 of the last Wild Magic Surge roll, persists for DM visibility
+  sectionOpen: {},            // sectionId -> bool; remembers collapsed/expanded top-level sections
   // Found magic items (loot/awards). Each: { id, name, type, rarity,
   // attunement (bool), attuned (bool), chargesMax, chargesUsed, notes }
   magicItems: [],
@@ -4984,6 +5053,40 @@ function render() {
   renderConditions();
   renderSurge(level);
   // renderMagicItemsCard() call removed — the Gear card supersedes it.
+  updateVitalsBar();
+}
+
+// Mirrors HP/AC/Concentration/Curse into the sticky vitals bar. Reads
+// already-rendered DOM values rather than recomputing stats, so it's cheap
+// to call from handlers that don't run a full render() (curse toggle,
+// concentration select).
+function updateVitalsBar() {
+  const bar = document.getElementById('vitals-bar');
+  if (!bar) return;
+  const hpCurEl = document.getElementById('hp-current');
+  const hpMaxEl = document.getElementById('hp-max');
+  const acEl = document.getElementById('ac-val');
+  const vbHpCur = document.getElementById('vb-hp-current');
+  const vbHpMax = document.getElementById('vb-hp-max');
+  const vbAc = document.getElementById('vb-ac-val');
+  if (vbHpCur && hpCurEl) vbHpCur.textContent = hpCurEl.value;
+  if (vbHpMax && hpMaxEl) vbHpMax.textContent = hpMaxEl.textContent;
+  if (vbAc && acEl) vbAc.textContent = acEl.textContent;
+
+  const concChip = document.getElementById('vb-conc-chip');
+  const concName = document.getElementById('vb-conc-name');
+  if (concChip) {
+    concChip.hidden = !state.concentratingOn;
+    if (concName) concName.textContent = state.concentratingOn || '';
+  }
+
+  const curseChip = document.getElementById('vb-curse-chip');
+  const curseStatus = document.getElementById('vb-curse-status');
+  if (curseChip) {
+    curseChip.hidden = classBreakdown(state.level).w < 1;
+    curseChip.classList.toggle('curse-used', !!state.hexbladesCurseUsed);
+    if (curseStatus) curseStatus.textContent = state.hexbladesCurseUsed ? 'Used' : 'Available';
+  }
 }
 
 function attunementMax(_level) { return 3; }
@@ -6995,6 +7098,7 @@ document.getElementById('hexblade-curse-toggle').addEventListener('click', () =>
   state.hexbladesCurseUsed = !state.hexbladesCurseUsed;
   saveState();
   renderCombatResources(state.level);
+  updateVitalsBar();
 });
 
 document.getElementById('inspiration-toggle').addEventListener('click', () => {
@@ -7071,6 +7175,7 @@ document.getElementById('spell-search').addEventListener('input', (e) => {
 document.getElementById('concentration-select').addEventListener('change', (e) => {
   state.concentratingOn = e.target.value || null;
   saveState();
+  updateVitalsBar();
 });
 
 // Rest buttons
@@ -7578,6 +7683,51 @@ document.addEventListener('click', (e) => {
     block.classList.toggle('open');
   }
 });
+
+// Persisted section collapse state — remembers which top-level sections were
+// open/closed across reloads, so a section you're not using this session
+// (e.g. Spells when nothing's prepared) doesn't re-expand and add scroll
+// length every load. Uses the same slug-id scheme quick-nav's idFor() below
+// falls back to (it only assigns an id `if (!el.id)`, so ids set here win).
+(function initSectionPersistence() {
+  function slugFor(el, label) {
+    if (!el.id) el.id = 'sec-' + label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return el.id;
+  }
+  document.querySelectorAll('details.section').forEach((sec) => {
+    const titleEl = sec.querySelector('.section-title');
+    if (!titleEl) return;
+    const id = slugFor(sec, titleEl.textContent.trim());
+    if (Object.prototype.hasOwnProperty.call(state.sectionOpen, id)) {
+      sec.open = state.sectionOpen[id];
+    }
+    sec.addEventListener('toggle', () => {
+      state.sectionOpen[id] = sec.open;
+      saveState();
+    });
+  });
+})();
+
+// Sticky vitals bar — fades in once the ability-scores/defense row scrolls
+// out of view, so HP/AC/Concentration/Curse stay checkable without
+// scrolling back to the top. Mirrors DOM values already kept current by
+// render()/updateVitalsBar() rather than tracking its own state.
+(function initVitalsBar() {
+  const bar = document.getElementById('vitals-bar');
+  if (!bar) return;
+  const sentinel = document.querySelector('.defense-row');
+  if (sentinel && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(([entry]) => {
+      bar.classList.toggle('visible', !entry.isIntersecting && entry.boundingClientRect.top < 0);
+    }, { threshold: 0 });
+    io.observe(sentinel);
+  }
+  document.getElementById('vb-hp-damage-btn')?.addEventListener('click', () => promptHpDelta('damage'));
+  document.getElementById('vb-hp-heal-btn')?.addEventListener('click', () => promptHpDelta('heal'));
+  document.getElementById('vb-nav-btn')?.addEventListener('click', () => {
+    document.getElementById('quick-nav-toggle')?.click();
+  });
+})();
 
 // Floating quick-nav: build links from sections + their visible subsections; smooth-scroll + open on click
 (function buildQuickNav() {
