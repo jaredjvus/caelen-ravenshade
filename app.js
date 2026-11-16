@@ -262,8 +262,11 @@ async function fetchPendingTransfers() {
   return await r.json();
 }
 
+// Marks a transfer claimed, but only if nobody has claimed it yet
+// (`claimed_at=is.null`), so two open tabs/devices can't both accept the same
+// gift. Returns the claimed row, or undefined if it was already claimed.
 async function claimTransfer(transferId) {
-  const r = await fetch(`${SB_REST_TRANSFERS}?id=eq.${transferId}`, {
+  const r = await fetch(`${SB_REST_TRANSFERS}?id=eq.${encodeURIComponent(transferId)}&claimed_at=is.null`, {
     method: 'PATCH',
     headers: { ...SB_AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' },
     body: JSON.stringify({ claimed_at: new Date().toISOString() })
@@ -2372,25 +2375,35 @@ function showTransferInbox(pending) {
     { okLabel: 'Accept All' });
 }
 
-// Adds each pending transfer's item to state.gear (with a fresh id so it
-// can't collide with an existing gear entry) and marks it claimed. If the
-// claim PATCH fails for one item, the item still lands in local gear — it's
-// simply offered again (harmlessly re-added would be the worse outcome, but
-// re-claiming is idempotent-ish here) next load rather than lost.
+// Claims each pending transfer first and only adds the item to state.gear
+// once the claim succeeds (with a fresh id so it can't collide with an
+// existing gear entry). A gift that was already claimed elsewhere is
+// skipped; one whose claim fails (offline) stays pending and is offered
+// again next load. Either way an item can't land twice.
 async function acceptAllTransfers(pending) {
   state.gear = state.gear || [];
+  let added = 0, skipped = 0, failed = 0;
   for (let i = 0; i < pending.length; i++) {
     const t = pending[i];
-    const item = { ...(t.item || {}), id: 'gear-' + Date.now() + '-' + i + '-' + Math.floor(Math.random() * 9999) };
-    state.gear.push(item);
     try {
-      await claimTransfer(t.id);
+      const claimed = await claimTransfer(t.id);
+      if (!claimed) { skipped++; continue; }
     } catch (e) {
       console.error('claim transfer failed', e);
+      failed++;
+      continue;
     }
+    const item = { ...(t.item || {}), id: 'gear-' + Date.now() + '-' + i + '-' + Math.floor(Math.random() * 9999) };
+    state.gear.push(item);
+    added++;
   }
-  saveState();
-  render();
+  if (added) { saveState(); render(); }
+  if (failed || skipped) {
+    const parts = [];
+    if (failed) parts.push(`${failed} gift${failed > 1 ? 's' : ''} couldn't be accepted right now (no connection?) and will be offered again next time.`);
+    if (skipped) parts.push(`${skipped} gift${skipped > 1 ? 's were' : ' was'} already accepted on another device.`);
+    showInfo('Gifts', parts.map(p => `<p>${esc(p)}</p>`).join(''));
+  }
 }
 
 // Currently-editing gear id (null = adding new)
