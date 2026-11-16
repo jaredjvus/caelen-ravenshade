@@ -1,0 +1,90 @@
+name: Encrypted sheet backup
+
+# Daily off-site copy of every character sheet (and pending item transfers),
+# so the sheets survive even if the Supabase project itself is lost — the
+# free plan has no backups of its own.
+#
+# The repo is public, so each snapshot is encrypted (AES-256, PBKDF2) with
+# the BACKUP_PASSPHRASE repository secret before it is committed to the
+# `backups` branch. Without the passphrase the files are unreadable.
+# Restoring: see BACKUPS.md.
+
+on:
+  schedule:
+    - cron: '17 9 * * *'   # daily, 09:17 UTC
+  workflow_dispatch:       # "Run workflow" button for an on-demand backup
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sheet-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: https://amnfbhhmwhsythzkvcra.supabase.co
+      # Publishable (public) key: read access only, same key the page uses.
+      SUPABASE_KEY: sb_publishable_f4f6TevmVgjSLw07PuJLgQ_ED8xhitb
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Check the passphrase secret is set
+        run: |
+          if [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Add a repository secret named BACKUP_PASSPHRASE (Settings > Secrets and variables > Actions) before backups can run."
+            exit 1
+          fi
+
+      - name: Download all sheets
+        run: |
+          set -euo pipefail
+          get() {
+            curl -sS --fail --retry 4 --retry-delay 10 --retry-all-errors \
+              -H "apikey: $SUPABASE_KEY" -H "Authorization: Bearer $SUPABASE_KEY" \
+              "$SUPABASE_URL/rest/v1/$1"
+          }
+          get "character_sheets?select=*" > sheets.json
+          get "item_transfers?select=*"   > transfers.json
+          # Sanity checks: refuse to store an empty or malformed snapshot.
+          jq -e 'type == "array" and length > 0 and all(.[]; (.data | type) == "object")' sheets.json > /dev/null \
+            || { echo "::error::Sheet download looks empty or malformed; not storing it."; exit 1; }
+          jq -e 'type == "array"' transfers.json > /dev/null
+          jq -n --slurpfile s sheets.json --slurpfile t transfers.json \
+            '{taken_at: (now | todate), character_sheets: $s[0], item_transfers: $t[0]}' > snapshot.json
+          echo "Sheets: $(jq length sheets.json), transfers: $(jq length transfers.json), bytes: $(wc -c < snapshot.json)"
+
+      - name: Encrypt
+        run: |
+          set -euo pipefail
+          gzip -9 snapshot.json
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt \
+            -in snapshot.json.gz -out snapshot.json.gz.enc -pass env:BACKUP_PASSPHRASE
+          # Prove the file decrypts before keeping it.
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+            -in snapshot.json.gz.enc -pass env:BACKUP_PASSPHRASE | gunzip | jq -e '.character_sheets | length > 0' > /dev/null
+          rm -f snapshot.json.gz sheets.json transfers.json
+
+      - name: Commit to the backups branch
+        run: |
+          set -euo pipefail
+          git init -q repo && cd repo
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git config user.name  "sheet-backup[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch -q --depth 1 origin backups; then
+            git checkout -q -b backups FETCH_HEAD
+          else
+            git checkout -q --orphan backups
+            printf 'Encrypted daily snapshots of the character sheets. See BACKUPS.md on main for how to restore.\n' > README.md
+            git add README.md
+          fi
+          mkdir -p snapshots
+          name="snapshots/$(date -u +%Y-%m-%dT%H%MZ).json.gz.enc"
+          mv ../snapshot.json.gz.enc "$name"
+          git add "$name"
+          git commit -q -m "Backup $(date -u +%Y-%m-%d)"
+          git push -q origin backups
+          echo "Stored $name"
