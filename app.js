@@ -4,6 +4,20 @@
 
 const STORAGE_KEY = 'caelen-sheet-v1';
 const STORAGE_KEY_BAK = STORAGE_KEY + '-bak';
+// HTML-escape any user-entered text before it goes into innerHTML. Gear,
+// notes and log entries can arrive from other sheets (item transfers) or
+// an imported file, so none of it can be trusted as markup.
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// Shallow copy of an object with every string field escaped (numbers and
+// booleans pass through), for templates that interpolate many fields.
+function escFields(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj || {})) out[k] = typeof v === 'string' ? esc(v) : v;
+  return out;
+}
+
 // Field Log placeholder for entries with no body.
 const LOG_EMPTY_BODY = 'No details yet — click Edit to add some.';
 
@@ -1887,21 +1901,21 @@ function renderWeaponAttacks(level, stats, pb) {
     const attBonus = wpn.attackBonus || 0;
     const dmgBonus = wpn.damageBonus || 0;
     const toHit = pb + abilityMod + attBonus - exhaustPen;
-    const dmgStr = `${damageDie} + ${abilityMod + dmgBonus} ${damageType}`;
+    const dmgStr = `${esc(damageDie)} + ${abilityMod + dmgBonus} ${esc(damageType)}`;
     const tagParts = [];
     if (attBonus || dmgBonus) tagParts.push(`<span class="weapon-tag-magic">Magic +${Math.max(attBonus, dmgBonus)}</span>`);
-    if (wpn.mastery) tagParts.push(`<span class="weapon-tag-mastery has-tip" title="${(WEAPON_MASTERIES[wpn.mastery] || '').replace(/"/g, '&quot;')}">${wpn.mastery}</span>`);
+    if (wpn.mastery) tagParts.push(`<span class="weapon-tag-mastery has-tip" title="${(WEAPON_MASTERIES[wpn.mastery] || '').replace(/"/g, '&quot;')}">${esc(wpn.mastery)}</span>`);
     if (wpn.quantity && wpn.quantity > 1) tagParts.push(`×${wpn.quantity}`);
     const block = document.createElement('div');
     block.className = 'weapon-attack-block';
     block.innerHTML = `
-      <h4>${wpn.name}${tagParts.length ? ' <span class="weapon-attack-tags">' + tagParts.join(' · ') + '</span>' : ''}</h4>
+      <h4>${esc(wpn.name)}${tagParts.length ? ' <span class="weapon-attack-tags">' + tagParts.join(' · ') + '</span>' : ''}</h4>
       <p style="font-family:'Cinzel',serif;color:var(--gold);letter-spacing:0.05em;margin-bottom:0.3rem;">
         ${fmtMod(toHit)} to hit · ${dmgStr}
         <span style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--gold-tarnish);letter-spacing:0.1em;margin-left:0.5rem;">${ability.toUpperCase()}${attBonus || dmgBonus ? ' · magic' : ''}</span>
       </p>
-      ${wpn.properties ? `<p style="font-size:0.78rem;color:var(--parchment-aged);">${wpn.properties}</p>` : ''}
-      ${wpn.notes ? `<p style="font-size:0.78rem;color:var(--parchment-aged);font-style:italic;">${wpn.notes}</p>` : ''}
+      ${wpn.properties ? `<p style="font-size:0.78rem;color:var(--parchment-aged);">${esc(wpn.properties)}</p>` : ''}
+      ${wpn.notes ? `<p style="font-size:0.78rem;color:var(--parchment-aged);font-style:italic;">${esc(wpn.notes)}</p>` : ''}
     `;
     list.appendChild(block);
   }
@@ -1928,7 +1942,7 @@ function renderSensesCard(stats) {
   // Dedupe (preserve order): species first, then gear.
   const seen = new Set();
   const merged = [...speciesSenses, ...(gearMods.senses || [])].filter(s => { if (seen.has(s)) return false; seen.add(s); return true; });
-  if (extraEl) extraEl.innerHTML = merged.length ? merged.join('<br>') : '';
+  if (extraEl) extraEl.innerHTML = merged.length ? merged.map(esc).join('<br>') : '';
 }
 
 // One-shot computation of all bonuses contributed by currently-equipped (and
@@ -2006,13 +2020,13 @@ function useConsumable(g) {
     const maxHp = computeHP(state.level, stats);
     const currentHp = state.hpCurrent == null ? maxHp : state.hpCurrent;
     showConfirm(`Drink ${g.name}`,
-      `<p>Roll <strong>${g.healDice}</strong> on your physical dice and enter the total below.</p>
+      `<p>Roll <strong>${esc(g.healDice)}</strong> on your physical dice and enter the total below.</p>
        <div style="margin:0.8rem 0;">
          <label style="font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:0.4rem;">Roll result (${dice.min}–${dice.max})</label>
          <input type="number" id="consumable-roll-input" value="${dice.avg}" min="${dice.min}" max="${dice.max}" style="width:5rem;text-align:center;padding:0.3rem;border:1px solid var(--gold-tarnish);background:rgba(255,255,255,0.6);color:var(--parchment);font-family:'Cinzel',serif;font-size:1.1rem;">
          <span style="margin-left:0.6rem;color:var(--parchment-aged);font-family:'EB Garamond',serif;font-style:italic;">HP recovered</span>
        </div>
-       <p style="font-size:0.85rem;color:var(--parchment-aged);font-style:italic;">Current HP: ${currentHp} / ${maxHp}. Healing caps at max.${g.notes ? '<br>' + g.notes : ''}</p>`,
+       <p style="font-size:0.85rem;color:var(--parchment-aged);font-style:italic;">Current HP: ${currentHp} / ${maxHp}. Healing caps at max.${g.notes ? '<br>' + esc(g.notes) : ''}</p>`,
       () => {
         const roll = Math.max(dice.min, Math.min(dice.max, parseInt(document.getElementById('consumable-roll-input').value, 10) || dice.avg));
         state.hpCurrent = Math.min(maxHp, currentHp + roll);
@@ -2023,7 +2037,7 @@ function useConsumable(g) {
       { okLabel: 'Drink & Heal' });
   } else {
     showConfirm(`Use ${g.name}`,
-      `<p>${g.notes || 'Spend one use of this item.'}</p>`,
+      `<p>${g.notes ? esc(g.notes) : 'Spend one use of this item.'}</p>`,
       () => {
         g.quantity = Math.max(0, (g.quantity || 1) - 1);
         saveState();
@@ -2062,26 +2076,27 @@ function renderGear() {
     return (a.name || '').localeCompare(b.name || '');
   });
   for (const g of sorted) {
+    const h = escFields(g); // display-safe copy; `g` stays the live object for handlers
     const row = document.createElement('div');
-    row.className = 'gear-row' + (g.equipped ? ' equipped' : '');
+    row.className = 'gear-row' + (h.equipped ? ' equipped' : '');
     const metaParts = [];
-    if (g.quantity && (g.quantity > 1 || g.type === 'consumable')) metaParts.push(`×${g.quantity}`);
-    if (g.weight) metaParts.push(`${g.weight} lb`);
-    if (g.rarity && g.rarity !== 'Mundane') metaParts.push(g.rarity);
-    if (g.type === 'armor' && g.armorBase) metaParts.push(`AC ${g.armorBase} (${g.armorType || '?'})`);
-    if (g.type === 'weapon' && g.damage) metaParts.push(`${g.damage} ${g.damageType || ''}`);
-    if (g.type === 'shield' && g.acBonus) metaParts.push(`+${g.acBonus} AC`);
-    if (g.type === 'consumable' && g.healDice) metaParts.push(`heals ${g.healDice}`);
+    if (h.quantity && (h.quantity > 1 || h.type === 'consumable')) metaParts.push(`×${h.quantity}`);
+    if (h.weight) metaParts.push(`${h.weight} lb`);
+    if (h.rarity && h.rarity !== 'Mundane') metaParts.push(h.rarity);
+    if (h.type === 'armor' && h.armorBase) metaParts.push(`AC ${h.armorBase} (${h.armorType || '?'})`);
+    if (h.type === 'weapon' && h.damage) metaParts.push(`${h.damage} ${h.damageType || ''}`);
+    if (h.type === 'shield' && h.acBonus) metaParts.push(`+${h.acBonus} AC`);
+    if (h.type === 'consumable' && h.healDice) metaParts.push(`heals ${h.healDice}`);
     const effects = [];
-    if (g.acBonus && g.type !== 'shield' && g.type !== 'armor') effects.push(`+${g.acBonus} AC`);
-    if (g.saveBonus) effects.push(`+${g.saveBonus} saves`);
-    if (g.attackBonus) effects.push(`+${g.attackBonus} hit`);
-    if (g.damageBonus) effects.push(`+${g.damageBonus} dmg`);
-    if (g.hpBonus) effects.push(`+${g.hpBonus} HP`);
-    if (g.speedBonus) effects.push(`+${g.speedBonus} ft Speed`);
-    if (g.statOverride) effects.push(...Object.entries(g.statOverride).map(([k, v]) => `${k.toUpperCase()} → ${v}`));
-    const chargesHtml = g.chargesMax ? `<div class="gear-charges-row">
-        <span class="gear-meta">Charges: <strong>${g.chargesMax - (g.chargesUsed || 0)}</strong> / ${g.chargesMax}${g.chargesRecover ? ' · recovers on ' + g.chargesRecover : ''}</span>
+    if (h.acBonus && h.type !== 'shield' && h.type !== 'armor') effects.push(`+${h.acBonus} AC`);
+    if (h.saveBonus) effects.push(`+${h.saveBonus} saves`);
+    if (h.attackBonus) effects.push(`+${h.attackBonus} hit`);
+    if (h.damageBonus) effects.push(`+${h.damageBonus} dmg`);
+    if (h.hpBonus) effects.push(`+${h.hpBonus} HP`);
+    if (h.speedBonus) effects.push(`+${h.speedBonus} ft Speed`);
+    if (h.statOverride) effects.push(...Object.entries(h.statOverride).map(([k, v]) => `${esc(k.toUpperCase())} → ${esc(v)}`));
+    const chargesHtml = h.chargesMax ? `<div class="gear-charges-row">
+        <span class="gear-meta">Charges: <strong>${h.chargesMax - (h.chargesUsed || 0)}</strong> / ${h.chargesMax}${h.chargesRecover ? ' · recovers on ' + h.chargesRecover : ''}</span>
         <button class="gear-charge-btn" data-charge-act="spend" title="Spend 1 charge">−1</button>
         <button class="gear-charge-btn" data-charge-act="restore" title="Restore 1 charge">+1</button>
         <button class="gear-charge-btn" data-charge-act="full" title="Refill all charges">refill</button>
@@ -2089,29 +2104,29 @@ function renderGear() {
     // Equip pill — shown for every non-consumable item. For armor/shield/weapon/
     // magic-effect items it drives mechanical stats; for misc items it's just a
     // 'worn/carried' marker. Potions/scrolls aren't "worn", so they skip this.
-    const mechanical = ['armor', 'shield', 'weapon'].includes(g.type)
-                    || g.acBonus || g.saveBonus || g.attackBonus || g.damageBonus
-                    || g.hpBonus || g.speedBonus || g.statOverride;
+    const mechanical = ['armor', 'shield', 'weapon'].includes(h.type)
+                    || h.acBonus || h.saveBonus || h.attackBonus || h.damageBonus
+                    || h.hpBonus || h.speedBonus || h.statOverride;
     const equipLabel = mechanical
-      ? (g.equipped ? '✓ Equipped' : 'Equip')
-      : (g.equipped ? '✓ Worn' : 'Wear');
-    const equipPill = g.type === 'consumable' ? '' : `<button class="gear-toggle equip ${g.equipped ? 'on' : ''}" title="${mechanical ? 'Equip to apply this item\'s mechanical effects (AC, attacks, etc.)' : 'Mark as currently worn / carried (no mechanical effect for misc items)'}">${equipLabel}</button>`;
+      ? (h.equipped ? '✓ Equipped' : 'Equip')
+      : (h.equipped ? '✓ Worn' : 'Wear');
+    const equipPill = h.type === 'consumable' ? '' : `<button class="gear-toggle equip ${h.equipped ? 'on' : ''}" title="${mechanical ? 'Equip to apply this item\'s mechanical effects (AC, attacks, etc.)' : 'Mark as currently worn / carried (no mechanical effect for misc items)'}">${equipLabel}</button>`;
     // Attune pill — only shown for items that require attunement.
-    const attunePill = g.requiresAttunement
-      ? `<button class="gear-toggle attune ${g.attuned ? 'on' : ''}" title="Attune (3 max — magic effects only apply when attuned)">${g.attuned ? '✦ Attuned' : 'Attune'}</button>`
+    const attunePill = h.requiresAttunement
+      ? `<button class="gear-toggle attune ${h.attuned ? 'on' : ''}" title="Attune (3 max — magic effects only apply when attuned)">${h.attuned ? '✦ Attuned' : 'Attune'}</button>`
       : '';
-    const empty = g.type === 'consumable' && !(g.quantity > 0);
-    const useBtn = g.type === 'consumable'
+    const empty = h.type === 'consumable' && !(h.quantity > 0);
+    const useBtn = h.type === 'consumable'
       ? `<button class="gear-use-btn" ${empty ? 'disabled' : ''}>${empty ? 'Empty' : 'Use'}</button>`
       : '';
     row.innerHTML = `
       <div class="gear-toggles">${equipPill}${attunePill}</div>
       <div class="gear-main">
-        <div><span class="gear-type">${g.type}</span><span class="gear-name">${g.name}</span></div>
+        <div><span class="gear-type">${h.type}</span><span class="gear-name">${h.name}</span></div>
         ${metaParts.length ? `<div class="gear-meta">${metaParts.join(' · ')}</div>` : ''}
         ${effects.length ? `<div class="gear-meta" style="color:var(--gold);">Effects: ${effects.join(' · ')}</div>` : ''}
         ${chargesHtml}
-        ${g.notes ? `<div class="gear-meta" style="font-style:italic;">${g.notes}</div>` : ''}
+        ${h.notes ? `<div class="gear-meta" style="font-style:italic;">${h.notes}</div>` : ''}
       </div>
       <div class="gear-actions">
         ${useBtn}
@@ -2225,15 +2240,15 @@ function renderTransferItemList() {
   list.innerHTML = sorted.map(g => {
     const stackable = !!(g.quantity && g.quantity > 1);
     const stepper = stackable
-      ? `<input type="number" class="transfer-item-qty" data-item-id="${g.id}" min="1" max="${g.quantity}" value="1" disabled>`
+      ? `<input type="number" class="transfer-item-qty" data-item-id="${esc(g.id)}" min="1" max="${esc(g.quantity)}" value="1" disabled>`
       : '';
     return `
       <div class="transfer-item-row">
         <label>
-          <input type="checkbox" class="transfer-item-check" data-item-id="${g.id}">
-          <span class="transfer-item-name">${g.name}</span>
-          <span class="gear-type">${g.type}</span>
-          ${stackable ? `<span class="gear-meta">×${g.quantity} owned</span>` : ''}
+          <input type="checkbox" class="transfer-item-check" data-item-id="${esc(g.id)}">
+          <span class="transfer-item-name">${esc(g.name)}</span>
+          <span class="gear-type">${esc(g.type)}</span>
+          ${stackable ? `<span class="gear-meta">×${esc(g.quantity)} owned</span>` : ''}
         </label>
         ${stepper}
       </div>
@@ -2347,8 +2362,8 @@ async function sendTransferSelections() {
 // transfers unclaimed so they're offered again next load.
 function showTransferInbox(pending) {
   const itemsHtml = pending.map(t => {
-    const itemName = escapeForSpellInfo((t.item && t.item.name) || 'Unknown item');
-    const fromName = escapeForSpellInfo(t.from_name || 'a party member');
+    const itemName = esc((t.item && t.item.name) || 'Unknown item');
+    const fromName = esc(t.from_name || 'a party member');
     return `<li>🎁 <strong>${itemName}</strong> from ${fromName}</li>`;
   }).join('');
   showConfirm('Incoming Gifts',
@@ -3009,12 +3024,12 @@ function renderCoinLog() {
     const dt = new Date(tx.ts);
     const date = fmtLogDate(tx.ts) + ' · ' + dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     return '<div class="coin-log-row">' +
-      '<span class="coin-log-amt ' + tx.kind + '">' + sign + logEsc(fmtCoinDelta(tx.delta)) + '</span>' +
+      '<span class="coin-log-amt ' + esc(tx.kind) + '">' + sign + logEsc(fmtCoinDelta(tx.delta)) + '</span>' +
       '<span class="coin-log-note' + (tx.note ? '' : ' empty') + '">' + (tx.note ? logEsc(tx.note) : '—') + '</span>' +
       '<span class="coin-log-date">' + date + '</span>' +
       '<span class="coin-log-actions">' +
-      '<button type="button" class="coin-log-undo" data-undo="' + tx.id + '">Undo</button>' +
-      '<button type="button" class="coin-log-del" data-del="' + tx.id + '" title="Remove this record (keeps balance)">✕</button>' +
+      '<button type="button" class="coin-log-undo" data-undo="' + esc(tx.id) + '">Undo</button>' +
+      '<button type="button" class="coin-log-del" data-del="' + esc(tx.id) + '" title="Remove this record (keeps balance)">✕</button>' +
       '</span></div>';
   }).join('');
   listEl.querySelectorAll('.coin-log-undo').forEach(b => b.addEventListener('click', () => undoCoinTx(b.dataset.undo)));
@@ -3451,9 +3466,7 @@ document.addEventListener('click', (e) => {
 // ============================================================
 // FIELD LOG — structured, searchable, tagged session journal
 // ============================================================
-function logEsc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
+function logEsc(s) { return esc(s); }
 function logUid() {
   return 'log-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
 }
@@ -3522,7 +3535,7 @@ function renderLog() {
     const editing = S.editing.has(e.id) ? ' editing' : '';
     const tagsHtml = (e.tags || []).map(t => `<span class="log-chip">#${logEsc(t)}</span>`).join('');
     const bodyText = e.body ? logEsc(e.body) : '';
-    return `<details class="log-entry${editing}" data-id="${e.id}"${open}>
+    return `<details class="log-entry${editing}" data-id="${logEsc(e.id)}"${open}>
       <summary>
         <span class="log-entry-title">${e.title ? logEsc(e.title) : '<em>untitled</em>'}</span>
         <span class="log-entry-tags">${tagsHtml}</span>
@@ -3535,7 +3548,7 @@ function renderLog() {
             <span class="log-entry-meta">edited ${e.updatedAt ? fmtLogDate(e.updatedAt) : '—'}</span>
             <span class="log-entry-btns">
               <button type="button" class="log-btn log-edit-btn">Edit</button>
-              <button type="button" class="log-delete-btn" data-del="${e.id}">Delete</button>
+              <button type="button" class="log-delete-btn" data-del="${logEsc(e.id)}">Delete</button>
             </span>
           </div>
         </div>
@@ -3547,7 +3560,7 @@ function renderLog() {
             <span class="log-entry-meta">edited ${e.updatedAt ? fmtLogDate(e.updatedAt) : '—'}</span>
             <span class="log-entry-btns">
               <button type="button" class="log-btn log-save-btn">Save &amp; Close</button>
-              <button type="button" class="log-delete-btn" data-del="${e.id}">Delete</button>
+              <button type="button" class="log-delete-btn" data-del="${logEsc(e.id)}">Delete</button>
             </span>
           </div>
         </div>
@@ -3613,7 +3626,7 @@ function renderLog() {
     if (searchI) searchI.value = '';
     logSave();
     renderLog();
-    const det = document.querySelector(`.log-entry[data-id="${e.id}"]`);
+    const det = document.querySelector(`.log-entry[data-id="${CSS.escape(e.id)}"]`);
     if (det) { det.scrollIntoView({ behavior: 'smooth', block: 'center' }); const t = det.querySelector('.log-title-input'); if (t) t.focus(); }
   });
   if (searchI) searchI.addEventListener('input', e => { renderLog.state.search = e.target.value; renderLog(); });
