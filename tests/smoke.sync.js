@@ -8,10 +8,10 @@ module.exports = ({ test, assert, openSheet, fakeSupabase, logCount, withTime, F
     await page.fill('.log-entry.editing .log-title-input', title);
   };
   // Waits for the debounced save + upload to finish.
-  const settle = (page) => page.waitForFunction(() => {
+  const settle = (page) => page.waitForTimeout(1500).then(() => page.waitForFunction(() => {
     const el = document.getElementById('save-cloud');
     return el && /synced|offline|refused/i.test(el.textContent) && !cloud.pushing;
-  }, null, { timeout: 8000 }).then(() => wait(page, 1500));
+  }, null, { timeout: 8000 })).then(() => wait(page, 600));
 
   test('a device that opens offline never uploads, then merges once online', async (b) => {
     const supa = fakeSupabase({ offline: true });

@@ -309,6 +309,17 @@ async function fetchRemote() {
 // reloads, e.g. edits made offline yesterday.
 const SYNC_BASE_KEY = STORAGE_KEY + '-base';
 const SYNC_ORIGIN_KEY = STORAGE_KEY + '-origin';   // 'defaults' while a never-synced device is running on DEFAULT_STATE
+// Optional write passcode (supabase/migrations/...c_sheet_write_passcode.sql).
+// Entered once per device and sent with every save; reads never need it.
+const SHEET_KEY_STORAGE = STORAGE_KEY + '-write-key';
+function sheetKey() { try { return localStorage.getItem(SHEET_KEY_STORAGE) || ''; } catch (e) { return ''; } }
+function setSheetKey(k) { try { if (k) localStorage.setItem(SHEET_KEY_STORAGE, k); else localStorage.removeItem(SHEET_KEY_STORAGE); } catch (e) {} }
+function writeHeaders(extra = {}) {
+  const h = { ...SB_AUTH, 'Content-Type': 'application/json', ...extra };
+  const k = sheetKey();
+  if (k) h['x-sheet-key'] = k;
+  return h;
+}
 const cloud = {
   ready: false,          // cloud copy loaded (or confirmed empty) this session
   base: readSyncBase(),
@@ -316,7 +327,8 @@ const cloud = {
   pendingPush: false,
   allowShrink: false,    // next upload is a deliberate reset/restore/import
   retryTimer: null,
-  refused: false
+  refused: false,
+  locked: false          // the sheet has a write passcode this device doesn't have (yet)
 };
 
 function readSyncBase() {
@@ -393,7 +405,7 @@ function reconcileWithRemote(remote) {
 // Upload this device's state, conditional on the cloud still matching
 // cloud.base. Returns { ok, row } | { conflict } | { refused, message }.
 async function uploadState(snapshot, allowShrink) {
-  const headers = { ...SB_AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+  const headers = writeHeaders({ Prefer: 'return=representation' });
   if (allowShrink) headers['x-allow-shrink'] = 'yes';
   let r;
   if (cloud.base) {
@@ -408,6 +420,7 @@ async function uploadState(snapshot, allowShrink) {
   if (!r.ok) {
     const text = await r.text();
     if (/sheet_guard/.test(text)) return { refused: true, message: text };
+    if (r.status === 401 || r.status === 403 || /row-level security/.test(text)) return { locked: true };
     throw new Error(`upload ${r.status}: ${text}`);
   }
   const rows = await r.json();
@@ -429,6 +442,7 @@ async function pushToCloud() {
       if (res.ok) {
         if (allowShrink) cloud.allowShrink = false;
         cloud.refused = false;
+        cloud.locked = false;
         setSyncBase(res.row.updated_at, snapshot);
         setCloudStatus('synced', 'Cloud: synced');
         return;
@@ -440,8 +454,17 @@ async function pushToCloud() {
         showSyncRefusedBanner();
         return;
       }
-      // Conflict: someone else saved since our base. Merge and retry.
+      // No row updated: either someone else saved since our base (merge and
+      // retry), or the row is still at our base and the database filtered
+      // the update out, which means the sheet has a write passcode we lack.
       const remote = await fetchRemote();
+      const unchanged = res.conflict && remote && cloud.base && Date.parse(remote.updated_at) === Date.parse(cloud.base.updated_at);
+      if (res.locked || unchanged) {
+        cloud.locked = true;
+        setCloudStatus('refused', 'Cloud: passcode needed');
+        promptForSheetKey();
+        return;
+      }
       if (!reconcileWithRemote(remote)) { setCloudStatus('synced', 'Cloud: synced'); return; }
     }
     throw new Error('kept conflicting after 4 attempts');
@@ -465,6 +488,88 @@ function syncToCloud(opts = {}) {
   setCloudStatus('syncing', 'Cloud: saving…');
   cloudTimer = setTimeout(pushToCloud, 800);
 }
+
+// Asked once per device when a save is refused for lack of the passcode.
+// Edits stay on this device meanwhile and are uploaded once it's entered.
+let _keyPromptOpen = false;
+function promptForSheetKey(message) {
+  if (_keyPromptOpen) return;
+  _keyPromptOpen = true;
+  showConfirm('Passcode needed to save',
+    `<p>${message ? esc(message) + ' ' : ''}This sheet is protected: saving to the cloud needs its passcode. Enter it once and this device will remember it.</p>
+     <p>Until then your changes are kept on this device.</p>
+     <input type="password" id="sheet-key-input" class="log-title-input" autocomplete="current-password" placeholder="Sheet passcode">`,
+    () => {
+      _keyPromptOpen = false;
+      const v = (document.getElementById('sheet-key-input') || {}).value || '';
+      if (!v) return;
+      setSheetKey(v);
+      cloud.locked = false;
+      pushToCloud();
+    },
+    { okLabel: 'Save with passcode' });
+  // Closing without entering it: allow asking again on a later save.
+  const reset = () => { _keyPromptOpen = false; };
+  document.getElementById('confirm-cancel').addEventListener('click', reset, { once: true });
+  document.getElementById('confirm-close').addEventListener('click', reset, { once: true });
+  setTimeout(() => { const i = document.getElementById('sheet-key-input'); if (i) i.focus(); }, 50);
+}
+
+async function sheetRpc(name, body) {
+  const r = await fetch(`https://${SUPABASE_PROJECT}.supabase.co/rest/v1/rpc/${name}`, {
+    method: 'POST', headers: writeHeaders(), body: JSON.stringify(body)
+  });
+  const text = await r.text();
+  if (!r.ok) {
+    let msg = text;
+    try { msg = JSON.parse(text).message || text; } catch (e) {}
+    throw new Error(msg);
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+// Options > Save passcode: see whether the sheet is protected, enter the
+// passcode on this device, change it, or remove it.
+async function openPasscodeDialog() {
+  let protectedSheet = null;
+  try { protectedSheet = await sheetRpc('sheet_has_key', { sheet_id: ROW_ID }); } catch (e) {}
+  const has = !!sheetKey();
+  if (protectedSheet === false) {
+    showInfo('Save passcode',
+      `<p>This sheet has no passcode: anyone with the page can save it. Its history and the daily backups still protect it from data loss.</p>
+       <p>To require a passcode for saving, set one in the Supabase SQL editor (instructions in <code>supabase/migrations/20261116c_sheet_write_passcode.sql</code>). After that, each device asks for it once.</p>`);
+    return;
+  }
+  showConfirm('Save passcode',
+    `<p>${protectedSheet === null ? 'Couldn\'t check right now whether this sheet has a passcode.' : 'This sheet is protected: saving needs its passcode.'}
+        This device ${has ? '<strong>has</strong>' : '<strong>does not have</strong>'} it.</p>
+     <label class="pc-label">Current passcode</label>
+     <input type="password" id="pc-current" class="log-title-input" autocomplete="current-password" value="">
+     <label class="pc-label">New passcode <span class="pc-hint">(leave empty to just remember the current one on this device; 8+ characters)</span></label>
+     <input type="password" id="pc-new" class="log-title-input" autocomplete="new-password">
+     <label class="pc-check"><input type="checkbox" id="pc-remove"> Remove the passcode from this sheet</label>`,
+    async () => {
+      const cur = document.getElementById('pc-current').value;
+      const next = document.getElementById('pc-new').value;
+      const remove = document.getElementById('pc-remove').checked;
+      if (!remove && !next) {
+        if (cur) { setSheetKey(cur); cloud.locked = false; pushToCloud(); showInfo('Save passcode', '<p>This device will use that passcode when saving.</p>'); }
+        return;
+      }
+      try {
+        await sheetRpc('set_sheet_key', { sheet_id: ROW_ID, old_key: cur, new_key: remove ? null : next });
+        setSheetKey(remove ? '' : next);
+        cloud.locked = false;
+        showInfo('Save passcode', remove
+          ? '<p>Passcode removed. Anyone with the page can save this sheet again.</p>'
+          : '<p>Passcode changed. Other devices will ask for the new one on their next save.</p>');
+      } catch (e) {
+        showInfo('Save passcode', `<p>That didn't work: ${esc(e.message)}</p>`);
+      }
+    },
+    { okLabel: 'Apply' });
+}
+document.getElementById('passcode-btn').addEventListener('click', openPasscodeDialog);
 
 function showSyncRefusedBanner() {
   showInfo('Cloud save refused',
@@ -3553,8 +3658,8 @@ window.addEventListener('pagehide', () => {
   clearTimeout(cloudTimer);
   if (!state || Object.keys(state).length === 0) return;
   persistLocal();
-  if (!cloud.ready || !cloud.base || cloud.refused || !localHasUnsyncedChanges()) return;
-  const headers = { ...SB_AUTH, 'Content-Type': 'application/json' };
+  if (!cloud.ready || !cloud.base || cloud.refused || cloud.locked || !localHasUnsyncedChanges()) return;
+  const headers = writeHeaders();
   if (cloud.allowShrink) headers['x-allow-shrink'] = 'yes';
   fetch(`${SB_REST}?id=eq.${ROW_ID}&updated_at=eq.${encodeURIComponent(cloud.base.updated_at)}`, {
     method: 'PATCH',

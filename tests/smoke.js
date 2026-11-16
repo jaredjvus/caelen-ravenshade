@@ -80,7 +80,8 @@ function fakeSupabase(opts = {}) {
 
     if (url.pathname.endsWith('/rpc/set_sheet_key')) {
       const { sheet_id, old_key, new_key } = body;
-      if (db.keys.has(sheet_id) && db.keys.get(sheet_id) !== old_key) return json(route, 400, { message: 'wrong current passcode' });
+      if (!db.keys.has(sheet_id)) return json(route, 400, { message: 'this sheet has no passcode; the first one is set in the Supabase SQL editor' });
+      if (db.keys.get(sheet_id) !== old_key) return json(route, 400, { message: 'wrong current passcode' });
       if (new_key) db.keys.set(sheet_id, new_key); else db.keys.delete(sheet_id);
       return json(route, 200, true);
     }

@@ -2787,3 +2787,9 @@ body.dm-mode .dm-hide { display: none; }
   .card h3 { flex-wrap: wrap; gap: 0.4rem; }
   #gear-attunement-counter { margin-right: 0 !important; }
 }
+
+/* Save-passcode dialog */
+.pc-label { display: block; margin: 0.8rem 0 0.3rem; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.pc-hint { text-transform: none; letter-spacing: 0; font-family: 'EB Garamond', serif; font-size: 0.8rem; color: var(--parchment-dim); }
+.pc-check { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.8rem; font-size: 0.95rem; }
+#confirm-body input.log-title-input { width: 100%; }
