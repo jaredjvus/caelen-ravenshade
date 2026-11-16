@@ -2764,3 +2764,26 @@ body.dm-mode .dm-hide { display: none; }
 /* Shown by reportRenderError() when one section of the sheet fails to render. */
 .render-error-banner { position: fixed; left: 50%; bottom: 4.5rem; transform: translateX(-50%); z-index: 2001; max-width: min(92vw, 560px); display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.9rem; background: var(--blood); color: #fff; font-family: 'EB Garamond', serif; font-size: 0.95rem; line-height: 1.35; box-shadow: 0 4px 18px rgba(0,0,0,0.45); border-radius: 3px; }
 .render-error-banner button { background: transparent; border: 0; color: #fff; font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 0 0.2rem; }
+
+/* Restore-an-earlier-version dialog */
+.restore-list { max-height: 50vh; overflow-y: auto; border: 1px solid var(--gold-tarnish); margin-top: 0.6rem; }
+.restore-row { display: grid; grid-template-columns: auto 1fr; gap: 0.1rem 0.6rem; align-items: center; padding: 0.5rem 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
+.restore-row:last-child { border-bottom: 0; }
+.restore-row input { grid-row: span 2; }
+.restore-when { font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.06em; color: var(--gold); }
+.restore-more { color: var(--parchment-dim); font-family: 'EB Garamond', serif; letter-spacing: 0; }
+.restore-what { font-size: 0.9rem; color: var(--parchment-aged); }
+
+/* Phone widths: nothing may be wider than the screen. A single too-wide
+   element makes mobile browsers lay out the whole page wider than the
+   phone, so the sheet renders zoomed out and dialogs run off the edge. */
+.concentration-tracker select { min-width: 0; }
+@media (max-width: 480px) {
+  .concentration-tracker { flex-wrap: wrap; gap: 0.4rem 0.9rem; padding: 0.6rem 0.8rem; }
+  .concentration-tracker select { flex-basis: 100%; }
+  .spell-table td.spell-source-cell { width: auto; white-space: normal; letter-spacing: 0.08em; }
+  .spell-table td.spell-action-cell { width: auto; }
+  .spell-table td, .spell-table th { padding-left: 0.3rem; padding-right: 0.3rem; }
+  .card h3 { flex-wrap: wrap; gap: 0.4rem; }
+  #gear-attunement-counter { margin-right: 0 !important; }
+}

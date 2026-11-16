@@ -104,4 +104,23 @@ module.exports = ({ test, assert, openSheet, fakeSupabase, logCount, withTime, F
     assert(last && last.data.logEntries.length === FIXTURE.logEntries.length, 'previous version should be in history');
     return s;
   });
+
+  test('restore an earlier version brings back a lost entry, and can be undone', async (b) => {
+    const supa = fakeSupabase({});
+    const s = await openSheet(b, { supa });
+    // Lose an entry (a normal single delete passes the guard), then restore.
+    await s.page.evaluate(() => { state.logEntries = state.logEntries.filter(e => e.id !== 'log-session-5'); saveState(); });
+    await settle(s.page);
+    assert(!cloudLogIds(supa).includes('log-session-5'), 'setup: entry should be gone');
+    await s.page.evaluate(() => { document.getElementById('options-toggle').click(); });
+    await s.page.click('#restore-btn');
+    await s.page.waitForSelector('.restore-row');
+    await s.page.click('#confirm-ok');                 // newest history version = before the delete
+    await settle(s.page);
+    assert(cloudLogIds(supa).includes('log-session-5'), 'restored entry should be back in the cloud');
+    assert(await logCount(s.page) === FIXTURE.logEntries.length, 'page should show the restored entry');
+    const last = supa.db.history[supa.db.history.length - 1];
+    assert(!last.data.logEntries.some(e => e.id === 'log-session-5'), 'the replaced version should be in history (undoable)');
+    return s;
+  });
 };

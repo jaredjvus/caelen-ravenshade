@@ -3289,6 +3289,73 @@ function doExport() {
   URL.revokeObjectURL(url);
 }
 
+// ============================================================
+// RESTORE AN EARLIER VERSION (cloud history)
+// ============================================================
+// Every cloud save archives the previous version in character_sheet_history
+// (see supabase/migrations). This lists the recent ones and puts the chosen
+// one back. Restoring is itself a save, so the version being replaced goes
+// into the history too: a restore can always be undone.
+const SB_REST_HISTORY = `https://${SUPABASE_PROJECT}.supabase.co/rest/v1/character_sheet_history`;
+
+async function fetchSheetHistory(limit = 60) {
+  const r = await fetch(`${SB_REST_HISTORY}?sheet_id=eq.${ROW_ID}&select=id,saved_at,data&order=id.desc&limit=${limit}`, { headers: SB_AUTH });
+  if (!r.ok) throw new Error(`history ${r.status}`);
+  return r.json();
+}
+
+function summarizeVersion(d) {
+  const n = (v) => Array.isArray(v) ? v.length : 0;
+  const parts = [`Level ${d.level || '?'}`, `${n(d.logEntries)} log entr${n(d.logEntries) === 1 ? 'y' : 'ies'}`, `${n(d.gear)} gear`];
+  if (d.hpCurrent != null) parts.push(`HP ${d.hpCurrent}`);
+  return parts.join(' · ');
+}
+
+async function openRestoreDialog() {
+  if (IS_DM) return;
+  showInfo('Restore an earlier version', '<p>Loading saved versions…</p>');
+  let versions;
+  try { versions = await fetchSheetHistory(); }
+  catch (e) {
+    showInfo('Restore an earlier version', '<p>Couldn\'t reach the cloud history right now. Check your connection and try again.</p>');
+    return;
+  }
+  // Collapse consecutive identical summaries (e.g. many HP taps) to keep the list readable.
+  const rows = [];
+  for (const v of versions) {
+    const label = summarizeVersion(v.data || {});
+    const prev = rows[rows.length - 1];
+    if (prev && prev.label === label) { prev.count++; continue; }
+    rows.push({ v, label, count: 1 });
+  }
+  if (!rows.length) {
+    showInfo('Restore an earlier version', '<p>No earlier versions saved yet. Versions are kept from now on, every time the sheet saves to the cloud.</p>');
+    return;
+  }
+  const fmt = (ts) => new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const list = rows.map((r, i) => `
+    <label class="restore-row">
+      <input type="radio" name="restore-version" value="${esc(r.v.id)}"${i === 0 ? ' checked' : ''}>
+      <span class="restore-when">${esc(fmt(r.v.saved_at))}${r.count > 1 ? ` <span class="restore-more">(+${r.count - 1} similar)</span>` : ''}</span>
+      <span class="restore-what">${esc(r.label)}</span>
+    </label>`).join('');
+  showConfirm('Restore an earlier version',
+    `<p>Now: <strong>${esc(summarizeVersion(state))}</strong></p>
+     <p>Pick a version to put back. The current version is kept in the history, so you can undo this.</p>
+     <div class="restore-list">${list}</div>`,
+    () => {
+      const picked = document.querySelector('input[name="restore-version"]:checked');
+      const chosen = picked && versions.find(v => String(v.id) === picked.value);
+      if (!chosen) return;
+      applyState({ ...chosen.data, updatedAt: new Date().toISOString() });
+      showSaveIndicator();
+      syncToCloud({ allowShrink: true });
+      showInfo('Restored', `<p>Restored the version from <strong>${esc(fmt(chosen.saved_at))}</strong>.</p>`);
+    },
+    { okLabel: 'Restore' });
+}
+document.getElementById('restore-btn').addEventListener('click', openRestoreDialog);
+
 document.getElementById('export-btn').addEventListener('click', doExport);
 document.getElementById('banner-export-btn').addEventListener('click', doExport);
 

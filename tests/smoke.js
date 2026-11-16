@@ -232,8 +232,19 @@ test('DM view', async (b) => {
 test('phone width with saved copy', async (b) => {
   const s = await openSheet(b, { mobile: true, local: withTime(FIXTURE, '2026-11-01T00:00:00.000Z') });
   assert(await logCount(s.page) === FIXTURE.logEntries.length, 'expected log entries on mobile');
-  const overflow = await s.page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  assert(overflow <= 1, 'page scrolls horizontally on mobile by ' + overflow + 'px');
+  // Compare against the phone's real width: if anything is too wide, mobile
+  // browsers widen the whole layout (innerWidth grows too), so comparing to
+  // innerWidth would never catch it.
+  const device = s.page.viewportSize().width;
+  const r = await s.page.evaluate((W) => {
+    const wide = [];
+    document.querySelectorAll('body *').forEach(el => {
+      const b = el.getBoundingClientRect();
+      if (b.width > 0 && b.right > W + 1 && getComputedStyle(el).position !== 'fixed' && ![...el.children].some(c => c.getBoundingClientRect().right > W + 1)) wide.push((el.id ? '#' + el.id : el.tagName.toLowerCase()) + '.' + String(el.className).split(' ')[0]);
+    });
+    return { layout: document.documentElement.scrollWidth, wide: [...new Set(wide)].slice(0, 6) };
+  }, device);
+  assert(r.layout <= device + 1, `page is ${r.layout}px wide on a ${device}px phone; too wide: ${r.wide.join(', ')}`);
   return s;
 });
 
