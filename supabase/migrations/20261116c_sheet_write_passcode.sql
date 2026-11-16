@@ -1,13 +1,18 @@
--- NOT YET APPLIED. Paste into Supabase > SQL Editor > New query and Run.
---
--- Optional per-sheet write passcode.
+-- APPLIED 2026-11-16 (after 20261116b). Verified with a rolled-back test: no
+-- passcode = unchanged; protected sheet refuses no/wrong passcode, accepts the
+-- right one; passcode never stored; other sheets unaffected; the API cannot
+-- set a first passcode.
 --
 -- Until a sheet has a passcode, nothing changes: anyone with the page can
 -- save it, exactly as before (so the other party members' sheets are
 -- unaffected unless they opt in). Once a passcode is set, saves to that
--- sheet are only accepted with the matching `x-sheet-key` header, which the
--- page sends after you enter the passcode once on each device. Reading is
--- unchanged (the DM view and party features keep working).
+-- sheet are refused unless they carry the passcode, which the page sends
+-- (as a "__sheet_key" marker inside the saved data, stripped before
+-- storing) after you enter it once on each device. Reading is unchanged
+-- (the DM view and party features keep working).
+--
+-- A marker in the body rather than a custom HTTP header: browsers only
+-- send custom headers cross-origin if the API's CORS rules allow them.
 --
 -- The passcode is stored only as a SHA-256 hash, in a table the API can't
 -- read. Pick a long passphrase: the endpoint is public, so a short PIN
@@ -39,21 +44,30 @@ immutable
 set search_path = public, extensions
 as $$ select encode(extensions.digest(coalesce(k, ''), 'sha256'), 'hex') $$;
 
--- True if the sheet has no passcode, or the request carries the right one.
-create or replace function public.sheet_key_ok(sid uuid)
-returns boolean
-language sql
-stable
+-- Runs before the guard/history trigger (trigger names fire alphabetically).
+create or replace function public.character_sheets_key_guard()
+returns trigger
+language plpgsql
 security definer
-set search_path = public, extensions
+set search_path = public
 as $$
-  select not exists (select 1 from sheet_write_keys where sheet_id = sid)
-      or exists (
-        select 1 from sheet_write_keys
-        where sheet_id = sid
-          and key_hash = sheet_key_hash(current_setting('request.headers', true)::json ->> 'x-sheet-key')
-      );
+declare
+  stored text;
+begin
+  select key_hash into stored from sheet_write_keys where sheet_id = new.id;
+  if stored is not null then
+    if new.data is null or jsonb_typeof(new.data) <> 'object'
+       or sheet_key_hash(new.data ->> '__sheet_key') <> stored then
+      raise exception 'sheet_locked: this sheet needs its passcode to save' using errcode = 'P0001';
+    end if;
+  end if;
+  return new;
+end;
 $$;
+
+create trigger character_sheets_0_key_guard
+  before insert or update on public.character_sheets
+  for each row execute function public.character_sheets_key_guard();
 
 create or replace function public.sheet_has_key(sheet_id uuid)
 returns boolean
@@ -88,19 +102,11 @@ begin
   if length(new_key) < 8 then
     raise exception 'passcode must be at least 8 characters' using errcode = 'P0001';
   end if;
-  insert into sheet_write_keys (sheet_id, key_hash) values (set_sheet_key.sheet_id, sheet_key_hash(new_key))
-  on conflict (sheet_id) do update set key_hash = excluded.key_hash, updated_at = now();
+  update sheet_write_keys k set key_hash = sheet_key_hash(new_key), updated_at = now()
+  where k.sheet_id = set_sheet_key.sheet_id;
   return true;
 end;
 $$;
 
-revoke all on function public.sheet_key_hash(text) from public, anon, authenticated;
-grant execute on function public.sheet_key_ok(uuid) to anon, authenticated;
 grant execute on function public.sheet_has_key(uuid) to anon, authenticated;
 grant execute on function public.set_sheet_key(uuid, text, text) to anon, authenticated;
-
--- Writes to character_sheets now also need sheet_key_ok().
-alter policy "anon update" on public.character_sheets
-  using (public.sheet_key_ok(id)) with check (public.sheet_key_ok(id));
-alter policy "anon insert" on public.character_sheets
-  with check (public.sheet_key_ok(id));

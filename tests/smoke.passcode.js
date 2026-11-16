@@ -28,6 +28,8 @@ module.exports = ({ test, assert, openSheet, fakeSupabase, ROW_ID, STORAGE_KEY, 
     // Remembered: later saves just work.
     await edit(s.page, 6); await settle(s.page);
     assert(supa.db.sheets.get(ROW_ID).data.tempHp === 6, 'remembered passcode should be used');
+    assert(!('__sheet_key' in supa.db.sheets.get(ROW_ID).data), 'the passcode must never be stored with the sheet');
+    assert(supa.db.customHeaders.length === 0, 'page sent custom headers (CORS risk): ' + supa.db.customHeaders.join(', '));
     return s;
   });
 

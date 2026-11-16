@@ -338,23 +338,30 @@ async function fetchRemote() {
 //     three-way merge it with ours (merge.js) and try again.
 //  3. The database itself refuses uploads that would blank the sheet or
 //     wipe a list (see supabase/migrations). Deliberate Reset / Restore /
-//     Import send `x-allow-shrink: yes`; the old version still goes to the
-//     history table first.
+//     Import mark the upload with __allow_shrink; the old version still
+//     goes to the history table first.
 // `cloud.base` = the last cloud version this device agreed with: its
 // updated_at (server clock) and data. Persisted so the merge works across
 // reloads, e.g. edits made offline yesterday.
 const SYNC_BASE_KEY = STORAGE_KEY + '-base';
 const SYNC_ORIGIN_KEY = STORAGE_KEY + '-origin';   // 'defaults' while a never-synced device is running on DEFAULT_STATE
-// Optional write passcode (supabase/migrations/...c_sheet_write_passcode.sql).
+// Optional save passcode (supabase/migrations/20261116c_sheet_write_passcode.sql).
 // Entered once per device and sent with every save; reads never need it.
 const SHEET_KEY_STORAGE = STORAGE_KEY + '-write-key';
 function sheetKey() { try { return localStorage.getItem(SHEET_KEY_STORAGE) || ''; } catch (e) { return ''; } }
 function setSheetKey(k) { try { if (k) localStorage.setItem(SHEET_KEY_STORAGE, k); else localStorage.removeItem(SHEET_KEY_STORAGE); } catch (e) {} }
 function writeHeaders(extra = {}) {
-  const h = { ...SB_AUTH, 'Content-Type': 'application/json', ...extra };
+  return { ...SB_AUTH, 'Content-Type': 'application/json', ...extra };
+}
+// The passcode and the deliberate-shrink flag travel as marker fields inside
+// the saved data (the database strips them before storing). Custom HTTP
+// headers would depend on the API's CORS rules allowing them.
+function withWriteMarkers(data, allowShrink) {
+  const out = { ...data };
   const k = sheetKey();
-  if (k) h['x-sheet-key'] = k;
-  return h;
+  if (k) out.__sheet_key = k;
+  if (allowShrink) out.__allow_shrink = true;
+  return out;
 }
 const cloud = {
   ready: false,          // cloud copy loaded (or confirmed empty) this session
@@ -443,21 +450,21 @@ function reconcileWithRemote(remote) {
 // cloud.base. Returns { ok, row } | { conflict } | { refused, message }.
 async function uploadState(snapshot, allowShrink) {
   const headers = writeHeaders({ Prefer: 'return=representation' });
-  if (allowShrink) headers['x-allow-shrink'] = 'yes';
+  const data = withWriteMarkers(snapshot, allowShrink);
   let r;
   if (cloud.base) {
     const url = `${SB_REST}?id=eq.${ROW_ID}&updated_at=eq.${encodeURIComponent(cloud.base.updated_at)}`;
-    r = await fetch(url, { method: 'PATCH', headers, body: JSON.stringify({ data: snapshot, schema_version: snapshot.schemaVersion || 1 }) });
+    r = await fetch(url, { method: 'PATCH', headers, body: JSON.stringify({ data, schema_version: snapshot.schemaVersion || 1 }) });
   } else {
     // No cloud version seen yet: create the row. If one appeared meanwhile,
     // the insert conflicts and we merge like any other conflict.
-    r = await fetch(SB_REST, { method: 'POST', headers, body: JSON.stringify({ id: ROW_ID, data: snapshot, schema_version: snapshot.schemaVersion || 1 }) });
+    r = await fetch(SB_REST, { method: 'POST', headers, body: JSON.stringify({ id: ROW_ID, data, schema_version: snapshot.schemaVersion || 1 }) });
     if (r.status === 409) return { conflict: true };
   }
   if (!r.ok) {
     const text = await r.text();
     if (/sheet_guard/.test(text)) return { refused: true, message: text };
-    if (r.status === 401 || r.status === 403 || /row-level security/.test(text)) return { locked: true };
+    if (/sheet_locked/.test(text) || r.status === 401 || r.status === 403 || /row-level security/.test(text)) return { locked: true };
     throw new Error(`upload ${r.status}: ${text}`);
   }
   const rows = await r.json();
@@ -3492,12 +3499,10 @@ window.addEventListener('pagehide', () => {
   if (!state || Object.keys(state).length === 0) return;
   persistLocal();
   if (!cloud.ready || !cloud.base || cloud.refused || cloud.locked || !localHasUnsyncedChanges()) return;
-  const headers = writeHeaders();
-  if (cloud.allowShrink) headers['x-allow-shrink'] = 'yes';
   fetch(`${SB_REST}?id=eq.${ROW_ID}&updated_at=eq.${encodeURIComponent(cloud.base.updated_at)}`, {
     method: 'PATCH',
-    headers,
-    body: JSON.stringify({ data: state, schema_version: state.schemaVersion || 1 }),
+    headers: writeHeaders(),
+    body: JSON.stringify({ data: withWriteMarkers(state, cloud.allowShrink), schema_version: state.schemaVersion || 1 }),
     keepalive: true,
   }).catch(() => {});
 });

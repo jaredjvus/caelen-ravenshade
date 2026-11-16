@@ -10,7 +10,13 @@ table (the newest 2000 versions per sheet). Saves that would blank a sheet,
 shrink it drastically or empty a list of 3+ entries are refused by the
 database, and sheets can't be deleted through the website.
 
-**To restore:** open the sheet, then **Options → Restore an earlier
+Saves are also conditional: a device only overwrites the cloud copy it
+last saw. If another device saved in between, the two are merged (log
+entries, gear and the coin log entry by entry) instead of one replacing the
+other, and a device that opened offline never uploads until it has loaded
+the cloud copy.
+
+**To restore:** open the sheet, then **Options → Restore earlier
 version**, pick a time and confirm. The version you replace is kept in the
 history too, so a restore can itself be undone.
 
@@ -52,6 +58,20 @@ openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in snap.enc -pass pass:'YOUR P
 `snapshot.json` contains `character_sheets` (every sheet's full data) and
 `item_transfers`. To put one sheet back, open it in the page, use
 **Options → Import** with that sheet's `data` object saved as a `.json` file.
+
+## Optional: save passcode
+
+Anyone with the page can save a sheet unless it has a passcode. To require
+one, run this in the Supabase SQL editor (use a long passphrase):
+
+```sql
+insert into public.sheet_write_keys (sheet_id, key_hash)
+values ('c9dbc72f-beed-4c2b-8d67-03dce25b0f7a', public.sheet_key_hash('your long passphrase'));
+```
+
+Each device then asks for it once, on its first save. **Options → Save
+passcode** changes or removes it. Lost it: `delete from
+public.sheet_write_keys where sheet_id = '<sheet id>';` in the SQL editor.
 
 ## 3. This device
 

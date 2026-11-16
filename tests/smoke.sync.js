@@ -102,6 +102,8 @@ module.exports = ({ test, assert, openSheet, fakeSupabase, logCount, withTime, F
     assert(cloudRow(supa).data.logEntries.length === 0, 'reset should go through');
     const last = supa.db.history[supa.db.history.length - 1];
     assert(last && last.data.logEntries.length === FIXTURE.logEntries.length, 'previous version should be in history');
+    assert(!('__allow_shrink' in cloudRow(supa).data), 'the reset marker must not be stored');
+    assert(supa.db.customHeaders.length === 0, 'page sent custom headers (CORS risk): ' + supa.db.customHeaders.join(', '));
     return s;
   });
 

@@ -24,8 +24,8 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 // ---- Fake Supabase -------------------------------------------------------
 // Just enough PostgREST for the page: GET/POST/PATCH on character_sheets and
 // item_transfers with `col=eq.value` / `col=is.null` filters, plus the
-// set_sheet_key RPC. Write access to a sheet with a key requires a matching
-// x-sheet-key header, mirroring the real RLS policy.
+// set_sheet_key RPC. Writes to a sheet with a passcode need a matching
+// __sheet_key marker in the data, mirroring the real key-guard trigger.
 function fakeSupabase(opts = {}) {
   const db = {
     sheets: new Map(),
@@ -34,7 +34,8 @@ function fakeSupabase(opts = {}) {
     history: [],
     writes: 0,
     offline: !!opts.offline,
-    nextHistoryId: 1
+    nextHistoryId: 1,
+    customHeaders: []
   };
   if (opts.sheet !== null) {
     db.sheets.set(ROW_ID, { id: ROW_ID, data: opts.sheet || FIXTURE, schema_version: 1, updated_at: opts.updatedAt || '2026-11-16T05:07:00.000Z' });
@@ -55,11 +56,14 @@ function fakeSupabase(opts = {}) {
   const matches = (row, filters) => filters.every(([k, op, v]) =>
     op === 'is' ? (v === 'null' ? row[k] == null : false)
       : k === 'updated_at' ? Date.parse(row[k]) === Date.parse(v) : String(row[k]) === v);
-  const canWrite = (id, headers) => !db.keys.has(id) || headers['x-sheet-key'] === db.keys.get(id);
+  // Mirrors the database: the passcode and the deliberate-shrink flag arrive
+  // as marker fields inside `data`, are checked, and are never stored.
+  const canWrite = (id, data) => !db.keys.has(id) || (data && data.__sheet_key) === db.keys.get(id);
+  const stripMarkers = (data) => { if (data && typeof data === 'object') { delete data.__sheet_key; delete data.__allow_shrink; } return data; };
   // Mirrors the database's sheet_guard trigger (supabase/migrations).
   const guard = (prev, next, headers) => {
     if (!next || typeof next !== 'object' || Array.isArray(next) || !Object.keys(next).length) return 'sheet_guard: refusing to blank sheet';
-    if (headers['x-allow-shrink'] === 'yes' || !prev) return null;
+    if ((next && next.__allow_shrink === true) || !prev) return null;
     const ol = JSON.stringify(prev).length, nl = JSON.stringify(next).length;
     if (ol > 1024 && nl < ol * 0.4) return 'sheet_guard: refusing to shrink sheet';
     for (const [k, v] of Object.entries(prev)) {
@@ -76,6 +80,8 @@ function fakeSupabase(opts = {}) {
     const method = req.method();
     const headers = req.headers();
     const body = req.postData() ? JSON.parse(req.postData()) : null;
+    // The page must not depend on custom headers (CORS); record any it sends.
+    for (const h of Object.keys(headers)) if (/^x-/.test(h)) db.customHeaders.push(h);
     if (db.offline) return route.abort();
 
     if (url.pathname.endsWith('/rpc/set_sheet_key')) {
@@ -95,7 +101,7 @@ function fakeSupabase(opts = {}) {
         return json(route, 200, [...db.sheets.values()].filter(r => matches(r, filters)));
       }
       if (method === 'POST') {
-        if (!canWrite(body.id, headers)) return json(route, 401, { message: 'new row violates row-level security policy' });
+        if (!canWrite(body.id, body.data)) return json(route, 400, { message: 'sheet_locked: this sheet needs its passcode to save' });
         const prev = db.sheets.get(body.id);
         const upsert = /merge-duplicates/.test(headers['prefer'] || '');
         if (prev && !upsert) return json(route, 409, { message: 'duplicate key value violates unique constraint' });
@@ -104,6 +110,7 @@ function fakeSupabase(opts = {}) {
           if (bad) return json(route, 400, { message: bad });
           archive(prev);
         }
+        stripMarkers(body.data);
         const row = { ...(prev || {}), ...body, updated_at: now() };
         db.sheets.set(body.id, row); db.writes++;
         return json(route, 201, [row]);
@@ -111,10 +118,12 @@ function fakeSupabase(opts = {}) {
       if (method === 'PATCH') {
         const out = [];
         for (const r of db.sheets.values()) {
-          if (!matches(r, filters) || !canWrite(r.id, headers)) continue;
+          if (!matches(r, filters)) continue;
+          if (!canWrite(r.id, body.data)) return json(route, 400, { message: 'sheet_locked: this sheet needs its passcode to save' });
           const bad = body.data !== undefined ? guard(r.data, body.data, headers) : null;
           if (bad) return json(route, 400, { message: bad });
           archive(r);
+          stripMarkers(body.data);
           Object.assign(r, body, { updated_at: now() });
           out.push(r); db.writes++;
         }
