@@ -4370,6 +4370,10 @@ const DEFAULT_INVENTORY = {
 
 const STORAGE_KEY = 'caelen-sheet-v1';
 const STORAGE_KEY_BAK = STORAGE_KEY + '-bak';
+// Field Log placeholder for entries with no body. Declared up here (not next
+// to renderLog) because the initial render() runs before the Field Log code
+// further down is evaluated; a later `const` would be in its TDZ and throw.
+const LOG_EMPTY_BODY = 'No details yet — click Edit to add some.';
 
 const DEFAULT_STATE = {
   schemaVersion: 1,
@@ -7831,7 +7835,6 @@ function logSave() {
   clearTimeout(logSave._t);
   logSave._t = setTimeout(() => setLogStatus('saved'), 500);
 }
-const LOG_EMPTY_BODY = 'No details yet — click Edit to add some.';
 function renderLog() {
   const listEl = document.getElementById('log-list');
   if (!listEl) return;
