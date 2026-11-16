@@ -27,9 +27,6 @@ const DEFAULT_STATE = {
   level: 1,
   hpCurrent: null, // null = match max
   tempHp: 0,       // temporary HP, doesn't stack with itself (Inspiring Leader, etc.)
-  coin: '65 gp in mixed coin, including 50 gp from his last booking',
-  notes: '',
-  inventory: JSON.parse(JSON.stringify(DEFAULT_INVENTORY)),
   alternates: {}, // featId -> optionId
   usedSlots: { warlock: 0, sorc1: 0, sorc2: 0, sorc3: 0, sorc4: 0, sorc5: 0, sorc6: 0, sorc7: 0, sorc8: 0 },
   sorceryPoints: 0,           // current; max = Sorcerer level (sorc 2+)
@@ -48,9 +45,6 @@ const DEFAULT_STATE = {
   tidesOfChaosUsed: false,    // Wild Magic sorc 3 feature; resets on long rest OR DM-triggered surge
   lastSurgeRoll: null,        // 1-100 of the last Wild Magic Surge roll, persists for DM visibility
   sectionOpen: {},            // sectionId -> bool; remembers collapsed/expanded top-level sections
-  // Found magic items (loot/awards). Each: { id, name, type, rarity,
-  // attunement (bool), attuned (bool), chargesMax, chargesUsed, notes }
-  magicItems: [],
   // Hit Dice tracking (Warlock d8 + Sorcerer d6, spent independently)
   hitDiceWarlockUsed: 0,
   hitDiceSorcererUsed: 0,
@@ -168,6 +162,48 @@ let state = loadState();
 // into state.gear, then empty state.magicItems so they don't double-count in
 // the attunement tracker. Runs every load but is a no-op after the first time
 // (since state.magicItems is left empty after migration).
+// One-time cleanup of fields earlier versions of the sheet used:
+//   notes      -> already imported into the Field Log as "Imported notes"
+//   coin       -> free-text coin line, replaced by the coin counters
+//   inventory  -> free-text item lists, replaced by the Gear card
+//   magicItems -> moved into gear by migrateLegacyMagicItemsToGear()
+// Nothing is thrown away: free text that isn't already in the Field Log is
+// copied into one "Archived" log entry first. Earlier versions also stay in
+// the cloud history and the daily backups.
+function migrateLegacyFields() {
+  const lines = [];
+  const notesText = typeof state.notes === 'string' ? state.notes.trim() : '';
+  if (notesText && Array.isArray(state.logEntries) && !state.logEntries.some(e => (e.body || '').trim() === notesText)) {
+    lines.push('Notes:\n' + notesText);
+  }
+  if (typeof state.coin === 'string' && state.coin.trim()) lines.push('Coin (old note): ' + state.coin.trim());
+  if (state.inventory && typeof state.inventory === 'object') {
+    for (const [cat, items] of Object.entries(state.inventory)) {
+      const list = (Array.isArray(items) ? items : []).map(x => String(x || '').trim()).filter(Boolean);
+      if (list.length) lines.push(`${cat[0].toUpperCase() + cat.slice(1)}:\n` + list.map(x => '- ' + x).join('\n'));
+    }
+  }
+  let changed = false;
+  const alreadyArchived = (state.logEntries || []).some(e => e && e.id === 'log-archived-legacy');
+  if (lines.length && !alreadyArchived) {
+    state.logEntries = Array.isArray(state.logEntries) ? state.logEntries : [];
+    const now = Date.now();
+    state.logEntries.push({
+      id: 'log-archived-legacy', title: 'Archived: old notes & inventory',
+      body: 'Kept from an earlier version of the sheet (these lists were replaced by the Gear card and coin counters).\n\n' + lines.join('\n\n'),
+      tags: ['archive'], createdAt: 1, updatedAt: now
+    });
+    changed = true;
+  }
+  // Only drop the old fields once their text is safely in the log. (With no
+  // logEntries at all, migrateLog() imports notes during render first.)
+  if (Array.isArray(state.logEntries)) {
+    for (const k of ['notes', 'coin', 'inventory']) if (k in state) { delete state[k]; changed = true; }
+  }
+  if (Array.isArray(state.magicItems) && state.magicItems.length === 0) { delete state.magicItems; changed = true; }
+  if (changed) saveState();
+}
+
 function migrateLegacyMagicItemsToGear() {
   const legacy = state.magicItems || [];
   if (legacy.length === 0) return;
@@ -353,6 +389,7 @@ function persistLocal() {
 }
 function applyState(data) {
   state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...JSON.parse(JSON.stringify(data)) };
+  try { migrateLegacyFields(); } catch (e) { console.error('migrateLegacyFields failed:', e); }
   const s = document.getElementById('level-slider'); if (s) s.value = state.level;
   persistLocal();
   render();
@@ -974,7 +1011,6 @@ function render() {
 
   // Inventory
   safeRender('renderGear', () => renderGear());
-  safeRender('renderInventory', () => renderInventory());
   safeRender('renderCoins', () => renderCoins());
   safeRender('migrateLog', () => migrateLog());
   safeRender('renderLog', () => renderLog());
@@ -985,7 +1021,6 @@ function render() {
   safeRender('renderDeathSaves', () => renderDeathSaves(hp));
   safeRender('renderConditions', () => renderConditions());
   safeRender('renderSurge', () => renderSurge(level));
-  // renderMagicItemsCard() call removed — the Gear card supersedes it.
   safeRender('updateVitalsBar', () => updateVitalsBar());
 }
 
@@ -1022,163 +1057,6 @@ function updateVitalsBar() {
   }
 }
 
-function attunementMax(_level) { return 3; }
-function totalAttunedCount() {
-  return (state.magicItems || []).filter(mi => mi.attuned).length;
-}
-function renderMagicItemsCard() {
-  const items = state.magicItems || [];
-  const attuneMax = attunementMax(state.level);
-  const totalAttuned = totalAttunedCount();
-  document.getElementById('magic-items-summary').innerHTML =
-    items.length === 0
-      ? `No found items yet. Use <strong>+ Add Item</strong> for loot, awards, or curios.`
-      : `${items.length} item${items.length > 1 ? 's' : ''} · <strong style="color:var(--gold);">${totalAttuned} / ${attuneMax} attuned</strong>`;
-
-  const list = document.getElementById('magic-items-list');
-  list.innerHTML = '';
-  for (const item of items) {
-    const row = document.createElement('div');
-    row.className = 'magic-item-row';
-    const attuneTag = item.attunement
-      ? `<span class="attune-tag${item.attuned ? ' attune-tag-on' : ''}">${item.attuned ? 'Attuned' : 'Attune'}</span>`
-      : '';
-    const attuneBtn = item.attunement
-      ? `<button class="mi-attune-toggle${item.attuned ? ' on' : ''}" data-toggle-attune="${item.id}" title="${item.attuned ? 'Drop attunement' : 'Attune to this item'}">${item.attuned ? 'Attuned' : 'Attune'}</button>`
-      : '';
-    let chargesHTML = '';
-    if (item.chargesMax && item.chargesMax > 0) {
-      const used = Math.min(item.chargesUsed || 0, item.chargesMax);
-      let pips = '';
-      for (let i = 0; i < item.chargesMax; i++) {
-        pips += `<div class="pip${i >= item.chargesMax - used ? ' used' : ''}" data-charge-idx="${i}" data-item-id="${item.id}" title="Charge ${i + 1}"></div>`;
-      }
-      chargesHTML = `<div class="mi-charge-pips" data-item-id="${item.id}">${pips}</div>`;
-    }
-    row.innerHTML = `
-      <div>
-        <div class="mi-name">${item.name}<span class="rarity-tag">${item.rarity}</span>${attuneTag}</div>
-        <div class="mi-row-meta">${item.type || ''}</div>
-      </div>
-      <div class="mi-row-controls">
-        ${attuneBtn}
-        ${chargesHTML}
-        <button class="mi-edit-btn" data-edit-item="${item.id}">Edit</button>
-      </div>
-      ${item.notes ? `<div class="mi-row-notes">${item.notes.replace(/[<>]/g, c => ({'<':'&lt;','>':'&gt;'}[c]))}</div>` : ''}
-    `;
-    list.appendChild(row);
-  }
-  list.querySelectorAll('[data-toggle-attune]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.toggleAttune;
-      const item = (state.magicItems || []).find(x => x.id === id);
-      if (!item) return;
-      if (!item.attuned) {
-        if (totalAttunedCount() >= attuneMax) {
-          showInfo('Attunement Cap', `<p>Attunement cap reached: ${attuneMax} of ${attuneMax}. Drop one to attune to a new item.</p>`);
-          return;
-        }
-        item.attuned = true;
-      } else {
-        item.attuned = false;
-      }
-      saveState();
-      render();
-    });
-  });
-  list.querySelectorAll('.mi-charge-pips .pip').forEach(pip => {
-    pip.addEventListener('click', () => {
-      const id = pip.dataset.itemId;
-      const idx = parseInt(pip.dataset.chargeIdx, 10);
-      const item = (state.magicItems || []).find(x => x.id === id);
-      if (!item) return;
-      const max = item.chargesMax;
-      const used = item.chargesUsed || 0;
-      const isAvailable = idx < (max - used);
-      item.chargesUsed = isAvailable ? (max - idx) : (max - idx - 1);
-      saveState();
-      render();
-    });
-  });
-  list.querySelectorAll('[data-edit-item]').forEach(btn => {
-    btn.addEventListener('click', () => openMagicItemModal(btn.dataset.editItem));
-  });
-}
-
-// Add/Edit Magic Item modal
-let _editingMagicItemId = null;
-function openMagicItemModal(id) {
-  _editingMagicItemId = id || null;
-  const existing = id ? (state.magicItems || []).find(x => x.id === id) : null;
-  document.getElementById('magic-item-title').textContent = existing ? 'Edit Magic Item' : 'Add Magic Item';
-  document.getElementById('mi-name').value = existing ? existing.name : '';
-  document.getElementById('mi-type').value = existing ? (existing.type || '') : '';
-  document.getElementById('mi-rarity').value = existing ? existing.rarity : 'Uncommon';
-  document.getElementById('mi-attunement').checked = existing ? !!existing.attunement : false;
-  document.getElementById('mi-charges-max').value = existing ? (existing.chargesMax || 0) : 0;
-  document.getElementById('mi-notes').value = existing ? (existing.notes || '') : '';
-  document.getElementById('magic-item-delete').hidden = !existing;
-  document.getElementById('magic-item-overlay').hidden = false;
-  setTimeout(() => document.getElementById('mi-name').focus(), 50);
-}
-function closeMagicItemModal() {
-  document.getElementById('magic-item-overlay').hidden = true;
-  _editingMagicItemId = null;
-}
-function saveMagicItem() {
-  const name = document.getElementById('mi-name').value.trim();
-  if (!name) { showInfo('Name required', '<p>Magic items must have a name.</p>'); return; }
-  const item = {
-    id: _editingMagicItemId || ('mi-' + Date.now() + '-' + Math.floor(Math.random() * 1e4)),
-    name,
-    type: document.getElementById('mi-type').value.trim(),
-    rarity: document.getElementById('mi-rarity').value,
-    attunement: document.getElementById('mi-attunement').checked,
-    chargesMax: parseInt(document.getElementById('mi-charges-max').value, 10) || 0,
-    notes: document.getElementById('mi-notes').value.trim()
-  };
-  if (_editingMagicItemId) {
-    const list = state.magicItems || [];
-    const idx = list.findIndex(x => x.id === _editingMagicItemId);
-    if (idx >= 0) {
-      item.attuned = list[idx].attuned && item.attunement;
-      item.chargesUsed = Math.min(list[idx].chargesUsed || 0, item.chargesMax);
-      list[idx] = item;
-    }
-  } else {
-    item.attuned = false;
-    item.chargesUsed = 0;
-    state.magicItems = [...(state.magicItems || []), item];
-  }
-  saveState();
-  closeMagicItemModal();
-  render();
-}
-function deleteMagicItem() {
-  if (!_editingMagicItemId) return;
-  const id = _editingMagicItemId;
-  showConfirm('Delete this magic item?', '<p>This removes it permanently from the sheet.</p>', () => {
-    state.magicItems = (state.magicItems || []).filter(x => x.id !== id);
-    saveState();
-    closeMagicItemModal();
-    render();
-  }, { okLabel: 'Delete' });
-}
-
-// Legacy Magic Items modal listeners — null-guarded (card removed, modal removed).
-{
-  const _addMi = document.getElementById('add-magic-item-btn');
-  if (_addMi) _addMi.addEventListener('click', (e) => { e.preventDefault(); openMagicItemModal(null); });
-  const _miClose = document.getElementById('magic-item-close');
-  if (_miClose) _miClose.addEventListener('click', closeMagicItemModal);
-  const _miSave = document.getElementById('magic-item-save');
-  if (_miSave) _miSave.addEventListener('click', saveMagicItem);
-  const _miDel = document.getElementById('magic-item-delete');
-  if (_miDel) _miDel.addEventListener('click', deleteMagicItem);
-  const _miOverlay = document.getElementById('magic-item-overlay');
-  if (_miOverlay) _miOverlay.addEventListener('click', (e) => { if (e.target.id === 'magic-item-overlay') closeMagicItemModal(); });
-}
 
 function renderSurge(level) {
   const card = document.getElementById('surge-card');
@@ -2252,8 +2130,7 @@ function computeGearMods() {
 
 function totalAttunedCount() {
   return (state.gear || []).filter(g => g.attuned).length
-    + (state.attunedReplicas || []).length
-    + (state.magicItems || []).filter(mi => mi.attuned).length;
+    + (state.attunedReplicas || []).length;
 }
 
 // Parses simple dice strings like "2d4+2" / "8d4+8" / "1d8" into
@@ -2405,7 +2282,7 @@ function renderGear() {
       if (!g.attuned) {
         const currentAttuned = totalAttunedCount();
         if (currentAttuned >= 3) {
-          alert('Attunement cap reached (3). Unattune another item first.');
+          showInfo('Attunement limit', '<p>You can attune to at most 3 items. Unattune another item first.</p>');
           return;
         }
       }
@@ -2429,10 +2306,11 @@ function renderGear() {
     });
     row.querySelector('.gear-edit-btn').addEventListener('click', () => openGearModal(g));
     row.querySelector('.gear-del-btn').addEventListener('click', () => {
-      if (!confirm(`Remove "${g.name}" from gear?`)) return;
-      state.gear = (state.gear || []).filter(x => x.id !== g.id);
-      saveState();
-      render();
+      showConfirm('Remove item?', `<p>Remove <strong>${esc(g.name)}</strong> from your gear?</p>`, () => {
+        state.gear = (state.gear || []).filter(x => x.id !== g.id);
+        saveState();
+        render();
+      }, { okLabel: 'Remove' });
     });
     list.appendChild(row);
   }
@@ -2851,39 +2729,6 @@ function saveGearForm() {
 }
 
 
-function renderInventory() {
-  for (const cat of ['armament', 'person']) {
-    const ul = document.getElementById('inv-' + cat);
-    if (!ul) continue;  // String-inventory cards replaced by the Gear card.
-    ul.innerHTML = '';
-    state.inventory[cat].forEach((item, idx) => {
-      const li = document.createElement('li');
-      li.className = 'inv-item';
-      const textarea = document.createElement('textarea');
-      textarea.className = 'inv-text';
-      textarea.value = item;
-      textarea.rows = 1;
-      textarea.addEventListener('input', (e) => {
-        autoSizeTextarea(e.target);
-        state.inventory[cat][idx] = e.target.value;
-        saveState();
-      });
-      const remove = document.createElement('button');
-      remove.className = 'inv-remove';
-      remove.innerHTML = '×';
-      remove.title = 'Remove item';
-      remove.addEventListener('click', () => {
-        state.inventory[cat].splice(idx, 1);
-        saveState();
-        renderInventory();
-      });
-      li.appendChild(textarea);
-      li.appendChild(remove);
-      ul.appendChild(li);
-      autoSizeTextarea(textarea);
-    });
-  }
-}
 
 function autoSizeTextarea(el) {
   el.style.height = 'auto';
@@ -3316,18 +3161,6 @@ function renderCoinLog() {
   });
 })();
 
-document.querySelectorAll('[data-add]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const cat = btn.getAttribute('data-add');
-    state.inventory[cat].push('');
-    saveState();
-    renderInventory();
-    // Focus the new field
-    const ul = document.getElementById('inv-' + cat);
-    const lastInput = ul.querySelector('li:last-child textarea');
-    if (lastInput) lastInput.focus();
-  });
-});
 
 // Buttons inside <summary> elements shouldn't toggle their parent <details>
 document.addEventListener('click', (e) => {
@@ -3981,6 +3814,7 @@ function renderLog() {
 // its temporal dead zone (the cause of two past "sheet goes blank" bugs).
 (function boot() {
   try { migrateLegacyMagicItemsToGear(); } catch (e) { console.error('migrateLegacyMagicItemsToGear failed:', e); }
+  try { migrateLegacyFields(); } catch (e) { console.error('migrateLegacyFields failed:', e); }
   safeRender('render', render);
   initCloudSync();
 })();

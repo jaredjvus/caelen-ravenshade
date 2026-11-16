@@ -695,18 +695,3 @@ const GEAR_LIBRARY = [
 ];
 
 
-const DEFAULT_INVENTORY = {
-  armament: [
-    'Sickle · simple melee weapon, the bonded blade for Hex Warrior. Was his mother\'s, for cutting herbs.',
-    'Daggers (2) · sheathed at the small of the back. Last resort.',
-    'Light Crossbow · with 20 bolts. Carried but rarely fired.',
-    'Leather Armor · soft, oiled, dark.',
-    'Arcane Focus · a fragment of obsidian set into the cracked silver pendant.'
-  ],
-  person: [
-    'The Pendant · cracked silver, his mother\'s. Worn always.',
-    'A Lute · second-hand, three pegs replaced. The one true joy he allows himself.',
-    'Scholar\'s Pack · book of cantrips, ink, parchment, ten torches, ten days\' rations, waterskin.',
-    'Letters · seven, sealed, addressed to "Sarielle Ravenshade, anywhere." Never sent.'
-  ]
-};

@@ -1,5 +1,4 @@
 {
- "coin": "65 gp",
  "gear": [
   {
    "id": "caelen-sickle",
@@ -113,14 +112,6 @@
   }
  ],
  "hpCurrent": null,
- "inventory": {
-  "person": [
-   "a"
-  ],
-  "armament": [
-   "b"
-  ]
- },
  "updatedAt": "2026-11-16T05:07:01.755Z",
  "usedSlots": {
   "sorc1": 0,
@@ -132,7 +123,6 @@
   "paralyzed": false
  },
  "exhaustion": 0,
- "magicItems": [],
  "sectionOpen": {
   "sec-magic": true,
   "sec-carry-kit": true,
@@ -161,7 +151,6 @@
  "hitDiceWarlockUsed": 0,
  "magicalCunningUsed": false,
  "hitDiceSorcererUsed": 0,
- "notes": "old notes",
  "logEntries": [
   {
    "id": "log-empty-body",
