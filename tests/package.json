@@ -1,0 +1,7 @@
+{
+  "name": "caelen-sheet-tests",
+  "private": true,
+  "description": "Browser smoke tests for the sheet. Kept out of the repo root so Netlify doesn't install anything for the static site.",
+  "scripts": { "test": "node smoke.js" },
+  "devDependencies": { "playwright": "1.63.0" }
+}

@@ -1,0 +1,196 @@
+{
+ "coin": "65 gp",
+ "gear": [
+  {
+   "id": "caelen-sickle",
+   "name": "Sickle",
+   "type": "weapon",
+   "notes": "",
+   "damage": "1d4",
+   "rarity": "Mundane",
+   "weight": 2,
+   "ability": "cha",
+   "mastery": "Sap",
+   "equipped": true,
+   "quantity": 1,
+   "damageType": "slashing",
+   "properties": "Light",
+   "weaponCategory": "simple-melee"
+  },
+  {
+   "id": "caelen-daggers",
+   "name": "Daggers",
+   "type": "weapon",
+   "notes": "",
+   "damage": "1d4",
+   "rarity": "Mundane",
+   "weight": 1,
+   "ability": "finesse",
+   "mastery": "Nick",
+   "equipped": true,
+   "quantity": 2,
+   "damageType": "piercing",
+   "properties": "Finesse, Light, Thrown 20/60",
+   "weaponCategory": "simple-melee"
+  },
+  {
+   "id": "caelen-crossbow",
+   "name": "Light Crossbow",
+   "type": "weapon",
+   "notes": "",
+   "damage": "1d8",
+   "rarity": "Mundane",
+   "weight": 5,
+   "ability": "dex",
+   "attuned": false,
+   "mastery": "Slow",
+   "equipped": true,
+   "quantity": 3,
+   "damageType": "piercing",
+   "properties": "Ammunition (80/320), Loading, Two-Handed",
+   "weaponCategory": "simple-ranged",
+   "requiresAttunement": false
+  },
+  {
+   "id": "caelen-bolts",
+   "name": "Crossbow Bolts",
+   "type": "misc",
+   "notes": "",
+   "weight": 0.075,
+   "equipped": true,
+   "quantity": 20
+  },
+  {
+   "id": "caelen-leather",
+   "name": "Leather Armor",
+   "type": "armor",
+   "notes": "",
+   "rarity": "Mundane",
+   "weight": 10,
+   "equipped": true,
+   "armorBase": 11,
+   "armorType": "light"
+  },
+  {
+   "id": "caelen-pendant",
+   "name": "Pendant",
+   "type": "misc",
+   "notes": "",
+   "weight": 0,
+   "equipped": true
+  },
+  {
+   "id": "gear-1786827312144-2429",
+   "name": "Potion of Healing",
+   "type": "consumable",
+   "notes": "",
+   "rarity": "Common",
+   "weight": 0.5,
+   "attuned": false,
+   "equipped": false,
+   "healDice": "2d4+2",
+   "quantity": 4,
+   "requiresAttunement": false
+  }
+ ],
+ "coins": {
+  "cp": 8,
+  "gp": 98,
+  "pp": 0,
+  "sp": 2
+ },
+ "level": 4,
+ "tempHp": 0,
+ "coinLog": [
+  {
+   "id": "log-ms0urrrg-ewp0",
+   "ts": 1785013199692,
+   "kind": "spend",
+   "note": "x",
+   "delta": {
+    "sp": 2
+   }
+  }
+ ],
+ "hpCurrent": null,
+ "inventory": {
+  "person": [
+   "a"
+  ],
+  "armament": [
+   "b"
+  ]
+ },
+ "updatedAt": "2026-11-16T05:07:01.755Z",
+ "usedSlots": {
+  "sorc1": 0,
+  "warlock": 0
+ },
+ "alternates": {},
+ "conditions": {
+  "poisoned": false,
+  "paralyzed": false
+ },
+ "exhaustion": 0,
+ "magicItems": [],
+ "sectionOpen": {
+  "sec-magic": true,
+  "sec-carry-kit": true,
+  "sec-field-log": true,
+  "sec-the-story": true,
+  "sec-the-bearer": true,
+  "sec-the-engine": true,
+  "sec-proficiencies": true,
+  "sec-ability-scores": true,
+  "sec-the-path-ahead": true,
+  "sec-features-inheritances": true
+ },
+ "lastSurgeRoll": null,
+ "schemaVersion": 1,
+ "sorceryPoints": 0,
+ "deathSavesFail": 0,
+ "luckPointsUsed": 0,
+ "concentratingOn": "Hex",
+ "healingHandsUsed": false,
+ "tidesOfChaosUsed": false,
+ "deathSavesSuccess": 0,
+ "heavenlyWingsUsed": false,
+ "heroicInspiration": false,
+ "innateSorceryUsed": 0,
+ "hexbladesCurseUsed": false,
+ "hitDiceWarlockUsed": 0,
+ "magicalCunningUsed": false,
+ "hitDiceSorcererUsed": 0,
+ "notes": "old notes",
+ "logEntries": [
+  {
+   "id": "log-empty-body",
+   "title": "Entry with no body",
+   "body": "",
+   "tags": [],
+   "createdAt": 1794149139715,
+   "updatedAt": 1794149139715
+  },
+  {
+   "id": "log-session-5",
+   "title": "Session 5",
+   "body": "Met a fixer in the night market.",
+   "tags": [
+    "npc"
+   ],
+   "createdAt": 1788630080217,
+   "updatedAt": 1788630080217
+  },
+  {
+   "id": "log-session-4",
+   "title": "Session 4",
+   "body": "Snake guys.",
+   "tags": [
+    "combat",
+    "loot"
+   ],
+   "createdAt": 1786817346403,
+   "updatedAt": 1786817346403
+  }
+ ]
+}
