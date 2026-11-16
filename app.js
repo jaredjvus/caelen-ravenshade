@@ -222,8 +222,8 @@ function loadState() {
 // ============================================================
 // CLOUD SYNC (Supabase REST)
 // ============================================================
-// Security model: writes are open via RLS; the row UUID below is the only
-// thing keeping random visitors out. Don't post it publicly.
+// Security model: see supabase/migrations. Reads are open; writes go through
+// the guard trigger (no wipes, every version archived).
 
 const SUPABASE_PROJECT = 'amnfbhhmwhsythzkvcra';
 const SUPABASE_KEY = 'sb_publishable_f4f6TevmVgjSLw07PuJLgQ_ED8xhitb';
@@ -288,39 +288,189 @@ async function fetchRemote() {
   return rows[0] || null;
 }
 
-async function pushRemote(snapshot) {
-  // Upsert: creates the row on first save, updates on subsequent saves. Earlier
-  // PATCH version silently no-op'd when the row didn't yet exist, leading to
-  // saves disappearing for sheets whose UUID was never INSERTed.
-  const r = await fetch(SB_REST, {
-    method: 'POST',
-    headers: { ...SB_AUTH, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify({ id: ROW_ID, data: snapshot, schema_version: snapshot.schemaVersion || 1 })
-  });
-  if (!r.ok) throw new Error(`upsert ${r.status}: ${await r.text()}`);
+// ============================================================
+// SYNC ENGINE — never overwrite newer cloud data
+// ============================================================
+// Rules that keep the cloud copy safe:
+//  1. Nothing is uploaded until this page has successfully loaded the cloud
+//     copy (`cloud.ready`). A device that opens offline keeps its edits
+//     locally and merges them in once the cloud is reachable, instead of
+//     pushing a blank/default sheet over the real one.
+//  2. Every upload is conditional on the cloud still being at the version
+//     this device last saw (`cloud.base.updated_at`). If another device
+//     saved in between, the upload matches no row; we fetch the newer copy,
+//     three-way merge it with ours (merge.js) and try again.
+//  3. The database itself refuses uploads that would blank the sheet or
+//     wipe a list (see supabase/migrations). Deliberate Reset / Restore /
+//     Import send `x-allow-shrink: yes`; the old version still goes to the
+//     history table first.
+// `cloud.base` = the last cloud version this device agreed with: its
+// updated_at (server clock) and data. Persisted so the merge works across
+// reloads, e.g. edits made offline yesterday.
+const SYNC_BASE_KEY = STORAGE_KEY + '-base';
+const SYNC_ORIGIN_KEY = STORAGE_KEY + '-origin';   // 'defaults' while a never-synced device is running on DEFAULT_STATE
+const cloud = {
+  ready: false,          // cloud copy loaded (or confirmed empty) this session
+  base: readSyncBase(),
+  pushing: false,
+  pendingPush: false,
+  allowShrink: false,    // next upload is a deliberate reset/restore/import
+  retryTimer: null,
+  refused: false
+};
+
+function readSyncBase() {
+  try {
+    const b = JSON.parse(localStorage.getItem(SYNC_BASE_KEY));
+    return b && b.updated_at && b.data ? b : null;
+  } catch (e) { return null; }
+}
+function setSyncBase(updatedAt, data) {
+  cloud.base = { updated_at: updatedAt, data: JSON.parse(JSON.stringify(data)) };
+  try {
+    localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(cloud.base));
+    localStorage.removeItem(SYNC_ORIGIN_KEY);
+  } catch (e) {}
+}
+function persistLocal() {
+  try {
+    const snap = JSON.stringify(state);
+    localStorage.setItem(STORAGE_KEY, snap);
+    localStorage.setItem(STORAGE_KEY_BAK, snap);
+  } catch (e) { console.error('Save failed', e); }
+}
+function applyState(data) {
+  state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...JSON.parse(JSON.stringify(data)) };
+  const s = document.getElementById('level-slider'); if (s) s.value = state.level;
+  persistLocal();
+  render();
+}
+function localHasUnsyncedChanges() {
+  if (cloud.base) return !sameSheet(state, cloud.base.data);
+  return localStorage.getItem(SYNC_ORIGIN_KEY) !== 'defaults' || !sameSheet(state, DEFAULT_STATE);
+}
+
+// Bring this device and the cloud copy `remote` (a row, or null when the
+// cloud has no data yet) into agreement. Returns true if an upload is needed.
+function reconcileWithRemote(remote) {
+  const hasRemote = remote && remote.data && typeof remote.data === 'object' && Object.keys(remote.data).length > 0;
+  if (!hasRemote) {
+    // Empty cloud row: seed it from this device if we have anything real.
+    return localStorage.getItem(SYNC_ORIGIN_KEY) !== 'defaults';
+  }
+  const base = cloud.base;
+  const remoteMoved = !base || Date.parse(remote.updated_at) !== Date.parse(base.updated_at);
+  const localChanged = localHasUnsyncedChanges();
+
+  if (!localChanged) {
+    if (remoteMoved || !sameSheet(state, remote.data)) applyState(remote.data);
+    setSyncBase(remote.updated_at, remote.data);
+    return false;
+  }
+  if (!remoteMoved) return true;          // only we changed: upload
+  if (sameSheet(state, remote.data)) {    // both changed the same way
+    setSyncBase(remote.updated_at, remote.data);
+    return false;
+  }
+  // Both changed: merge. Without a stored base (first sync from an older
+  // page version, or a device that started from defaults) use the best
+  // available common ancestor.
+  let ancestor = base ? base.data : null;
+  let preferLocal = true;
+  if (!ancestor && localStorage.getItem(SYNC_ORIGIN_KEY) === 'defaults') ancestor = DEFAULT_STATE;
+  if (!ancestor) {
+    const localTime = state.updatedAt ? Date.parse(state.updatedAt) : 0;
+    preferLocal = localTime > Date.parse(remote.updated_at);
+  }
+  const merged = mergeSheets(ancestor, state, remote.data, { preferLocal });
+  merged.updatedAt = new Date().toISOString();
+  setSyncBase(remote.updated_at, remote.data);
+  applyState(merged);
+  console.info('[sync] merged changes from another device');
+  return !sameSheet(merged, remote.data);
+}
+
+// Upload this device's state, conditional on the cloud still matching
+// cloud.base. Returns { ok, row } | { conflict } | { refused, message }.
+async function uploadState(snapshot, allowShrink) {
+  const headers = { ...SB_AUTH, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+  if (allowShrink) headers['x-allow-shrink'] = 'yes';
+  let r;
+  if (cloud.base) {
+    const url = `${SB_REST}?id=eq.${ROW_ID}&updated_at=eq.${encodeURIComponent(cloud.base.updated_at)}`;
+    r = await fetch(url, { method: 'PATCH', headers, body: JSON.stringify({ data: snapshot, schema_version: snapshot.schemaVersion || 1 }) });
+  } else {
+    // No cloud version seen yet: create the row. If one appeared meanwhile,
+    // the insert conflicts and we merge like any other conflict.
+    r = await fetch(SB_REST, { method: 'POST', headers, body: JSON.stringify({ id: ROW_ID, data: snapshot, schema_version: snapshot.schemaVersion || 1 }) });
+    if (r.status === 409) return { conflict: true };
+  }
+  if (!r.ok) {
+    const text = await r.text();
+    if (/sheet_guard/.test(text)) return { refused: true, message: text };
+    throw new Error(`upload ${r.status}: ${text}`);
+  }
   const rows = await r.json();
-  return rows[0];
+  if (!rows.length) return { conflict: true };
+  return { ok: true, row: rows[0] };
+}
+
+async function pushToCloud() {
+  if (IS_DM || !cloud.ready) return;
+  if (cloud.pushing) { cloud.pendingPush = true; return; }
+  cloud.pushing = true;
+  clearTimeout(cloud.retryTimer);
+  setCloudStatus('syncing', 'Cloud: saving…');
+  try {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const snapshot = JSON.parse(JSON.stringify(state));
+      const allowShrink = cloud.allowShrink;
+      const res = await uploadState(snapshot, allowShrink);
+      if (res.ok) {
+        if (allowShrink) cloud.allowShrink = false;
+        cloud.refused = false;
+        setSyncBase(res.row.updated_at, snapshot);
+        setCloudStatus('synced', 'Cloud: synced');
+        return;
+      }
+      if (res.refused) {
+        cloud.refused = true;
+        console.error('[sync] cloud refused upload:', res.message);
+        setCloudStatus('refused', 'Cloud: save refused');
+        showSyncRefusedBanner();
+        return;
+      }
+      // Conflict: someone else saved since our base. Merge and retry.
+      const remote = await fetchRemote();
+      if (!reconcileWithRemote(remote)) { setCloudStatus('synced', 'Cloud: synced'); return; }
+    }
+    throw new Error('kept conflicting after 4 attempts');
+  } catch (e) {
+    console.error('cloud sync failed', e);
+    setCloudStatus('error', 'Cloud: offline');
+    cloud.retryTimer = setTimeout(pushToCloud, 30000);
+  } finally {
+    cloud.pushing = false;
+    if (cloud.pendingPush) { cloud.pendingPush = false; syncToCloud(); }
+  }
 }
 
 let cloudTimer = null;
-function syncToCloud() {
+// Debounced upload. opts.allowShrink marks a deliberate reset/restore/import.
+function syncToCloud(opts = {}) {
+  if (IS_DM) return;
+  if (opts.allowShrink) cloud.allowShrink = true;
+  if (!cloud.ready) { setCloudStatus('error', 'Cloud: offline'); return; } // kept locally; merged once the cloud loads
   if (cloudTimer) clearTimeout(cloudTimer);
   setCloudStatus('syncing', 'Cloud: saving…');
-  cloudTimer = setTimeout(async () => {
-    try {
-      const row = await pushRemote(state);
-      if (row && row.updated_at) {
-        // Adopt the server's timestamp as our local truth so next load
-        // doesn't see a phantom "cloud is newer" from clock skew.
-        state.updatedAt = row.updated_at;
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-      }
-      setCloudStatus('synced', 'Cloud: synced');
-    } catch (e) {
-      console.error('cloud sync failed', e);
-      setCloudStatus('error', 'Cloud: offline');
-    }
-  }, 800);
+  cloudTimer = setTimeout(pushToCloud, 800);
+}
+
+function showSyncRefusedBanner() {
+  showInfo('Cloud save refused',
+    '<p>The cloud refused a save from this device because it would have erased a large part of the sheet (for example, emptied the Field Log or gear list).</p>' +
+    '<p>Nothing was lost: the cloud copy is unchanged, and this device still has its own copy.</p>' +
+    '<p>If this device\'s copy is wrong, reload the page to get the cloud copy. If the cloud copy is wrong, use <strong>Options → Restore an earlier version</strong>.</p>');
 }
 
 function setCloudErrorBanner(visible) {
@@ -334,7 +484,7 @@ function setCloudStatus(kind, text) {
   el.classList.remove('cloud-synced', 'cloud-syncing', 'cloud-error', 'cloud-loading');
   if (kind === 'synced')  el.classList.add('cloud-synced');
   if (kind === 'syncing') el.classList.add('cloud-syncing');
-  if (kind === 'error')   el.classList.add('cloud-error');
+  if (kind === 'error' || kind === 'refused') el.classList.add('cloud-error');
   if (kind === 'loading') el.classList.add('cloud-loading');
   el.classList.add('show');
   setCloudErrorBanner(kind === 'error');
@@ -345,6 +495,7 @@ function setLoadedFrom(source) {
     cloud:         '· loaded from cloud ·',
     'local-newer': '· loaded from device (newer than cloud) ·',
     local:         '· loaded from device (cloud unreachable) ·',
+    merged:        '· merged this device\'s unsynced changes with the cloud ·',
     defaults:      '· loaded from defaults ·'
   };
   document.getElementById('loaded-from').textContent = labels[source] || '';
@@ -361,9 +512,7 @@ function saveState() {
   saveTimer = setTimeout(() => {
     try {
       state.updatedAt = new Date().toISOString();
-      const snapshot = JSON.stringify(state);
-      localStorage.setItem(STORAGE_KEY, snapshot);
-      localStorage.setItem(STORAGE_KEY_BAK, snapshot);
+      persistLocal();
       showSaveIndicator();
       syncToCloud();
     } catch (e) { console.error('Save failed', e); }
@@ -3162,13 +3311,9 @@ document.getElementById('import-file').addEventListener('change', (e) => {
     }
     const applyImport = () => {
       const { _exportedAt, _app, ...incoming } = parsed;
-      state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...incoming };
-      state.updatedAt = new Date().toISOString();
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (err) { console.error('Save failed', err); }
-      (() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
-      render();
+      applyState({ ...incoming, updatedAt: new Date().toISOString() });
       showSaveIndicator();
-      syncToCloud();
+      syncToCloud({ allowShrink: true }); // deliberate; the old version is kept in the cloud history
     };
     const schemaOk = !(parsed.schemaVersion && parsed.schemaVersion > DEFAULT_STATE.schemaVersion);
     const doImport = () => showConfirm(
@@ -3197,14 +3342,10 @@ document.getElementById('reset-btn').addEventListener('click', () => {
     'Reset Sheet?',
     `<p>This will erase the entire sheet and return everything to defaults:</p>
      <ul><li>All your edits, level, and choices</li><li>Inventory and notes</li><li>Combat resources and concentration</li></ul>
-     <div class="confirm-note">This cannot be undone.</div>`,
+     <div class="confirm-note">The current version is kept in the cloud history, so you can get it back with Options → Restore an earlier version.</div>`,
     () => {
-      state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-      state.updatedAt = new Date().toISOString();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      (() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
-      render();
-      syncToCloud();
+      applyState({ ...DEFAULT_STATE, updatedAt: new Date().toISOString() });
+      syncToCloud({ allowShrink: true }); // deliberate; the old version is kept in the cloud history
     },
     { okLabel: 'Reset' }
   );
@@ -3259,103 +3400,99 @@ document.getElementById('gear-library-search').addEventListener('input', (e) => 
 // localStorage is the fast cache. After the initial render from local,
 // reach out for remote state; if it's newer, replace and re-render.
 async function initCloudSync() {
-  const hasLocal = !!localStorage.getItem(STORAGE_KEY);
+  if (IS_DM) return startDmPolling();
+  const hadLocal = !!localStorage.getItem(STORAGE_KEY);
+  if (!hadLocal && !cloud.base) { try { localStorage.setItem(SYNC_ORIGIN_KEY, 'defaults'); } catch (e) {} }
   setCloudStatus('loading', 'Cloud: loading…');
   try {
     const remote = await fetchRemote();
-    const hasRemoteData = remote && remote.data && Object.keys(remote.data).length > 0;
-    if (hasRemoteData) {
-      const remoteTime = new Date(remote.updated_at).getTime();
-      const localTime = state.updatedAt ? new Date(state.updatedAt).getTime() : 0;
-      if (remoteTime > localTime) {
-        state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...remote.data };
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-        (() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
-        render();
-        setLoadedFrom('cloud');
-      } else {
-        setLoadedFrom('local-newer');
-        // Local is ahead of cloud — push so they reconverge.
-        syncToCloud();
-      }
-    } else {
-      setLoadedFrom(hasLocal ? 'local' : 'defaults');
-      // Cloud row is empty; if we have local state, seed the cloud.
-      if (hasLocal) syncToCloud();
-    }
-    setCloudStatus('synced', 'Cloud: synced');
+    const hadUnsynced = hadLocal && localHasUnsyncedChanges();
+    const needsPush = reconcileWithRemote(remote);
+    cloud.ready = true;
+    setLoadedFrom(hadUnsynced ? 'merged' : (remote ? 'cloud' : (hadLocal ? 'local' : 'defaults')));
+    if (needsPush) pushToCloud(); else setCloudStatus('synced', 'Cloud: synced');
   } catch (e) {
     console.error('cloud load failed', e);
-    setLoadedFrom(hasLocal ? 'local' : 'defaults');
+    setLoadedFrom(hadLocal ? 'local' : 'defaults');
     setCloudStatus('error', 'Cloud: offline');
+    // Keep trying; nothing is uploaded until this succeeds.
+    clearTimeout(cloud.retryTimer);
+    cloud.retryTimer = setTimeout(initCloudSync, 30000);
+    return;
   }
 
   // Check for gifts from other party members, once per load. Kept as its own
-  // try/catch (separate from the state-sync try above) so a failure here
-  // doesn't flip the cloud status indicator to "offline" — it's a secondary
-  // check, not the primary sync. Skipped in DM view: the DM shouldn't be
-  // claiming gifts on Caelen's behalf.
-  if (!IS_DM) {
-    try {
-      const pending = await fetchPendingTransfers();
-      if (pending && pending.length) showTransferInbox(pending);
-    } catch (e) {
-      console.error('transfer inbox check failed', e);
-    }
+  // try/catch so a failure here doesn't flip the cloud status to "offline".
+  try {
+    const pending = await fetchPendingTransfers();
+    if (pending && pending.length) showTransferInbox(pending);
+  } catch (e) {
+    console.error('transfer inbox check failed', e);
   }
 }
+
+// Pull other devices' changes when this tab comes back into view (and when
+// the network returns), so a tab left open doesn't keep working on an old copy.
+async function refreshFromCloud() {
+  if (IS_DM) return;
+  if (!cloud.ready) { clearTimeout(cloud.retryTimer); return initCloudSync(); }
+  if (cloud.pushing) return;
+  try {
+    const remote = await fetchRemote();
+    if (reconcileWithRemote(remote)) pushToCloud();
+    else setCloudStatus('synced', 'Cloud: synced');
+  } catch (e) {
+    setCloudStatus('error', 'Cloud: offline');
+  }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshFromCloud(); });
+window.addEventListener('online', refreshFromCloud);
 
 // ============================================================
 // DM POLLING
 // ============================================================
 // In DM view, poll the cloud every 5s so HP and slot changes show up
 // during combat. Skipped when the tab is hidden to save bandwidth.
-if (IS_DM) {
-  setInterval(async () => {
+// Read-only: saveState()/syncToCloud() are no-ops in DM view.
+function startDmPolling() {
+  let lastSeen = null;
+  const poll = async () => {
     if (document.visibilityState === 'hidden') return;
     try {
       const remote = await fetchRemote();
       if (!remote || !remote.data || Object.keys(remote.data).length === 0) return;
-      const remoteTime = new Date(remote.updated_at).getTime();
-      const localTime = state.updatedAt ? new Date(state.updatedAt).getTime() : 0;
-      if (remoteTime > localTime) {
+      if (remote.updated_at !== lastSeen) {
+        lastSeen = remote.updated_at;
         state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...remote.data };
-        (() => { const _s = document.getElementById('level-slider'); if (_s) _s.value = state.level; })();
+        const s = document.getElementById('level-slider'); if (s) s.value = state.level;
         render();
-        setCloudStatus('synced', 'Cloud: live');
       }
+      setCloudStatus('synced', 'Cloud: live');
     } catch (e) {
       console.error('dm poll failed', e);
       setCloudStatus('error', 'Cloud: offline');
     }
-  }, 5000);
+  };
+  poll();
+  setInterval(poll, 5000);
 }
 
-// ============================================================
-// HEARTBEAT — keep Supabase project alive
-// ============================================================
-// Free-tier projects pause after 7 days of inactivity. A lightweight read
-// every 20 minutes while the page is visible prevents that.
-if (!IS_DM) {
-  setInterval(async () => {
-    if (document.visibilityState === 'hidden') return;
-    try { await fetchRemote(); } catch (e) {}
-  }, 20 * 60 * 1000);
-}
-
+// Last-chance upload when the tab is closed or backgrounded. Same rules as
+// any upload: only after the cloud loaded, and only if the cloud is still at
+// our base version (otherwise the next load merges, nothing is lost).
 window.addEventListener('pagehide', () => {
   if (IS_DM) return;
   clearTimeout(saveTimer);
   clearTimeout(cloudTimer);
   if (!state || Object.keys(state).length === 0) return;
-  state.updatedAt = new Date().toISOString();
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-  try { localStorage.setItem(STORAGE_KEY_BAK, JSON.stringify(state)); } catch (e) {}
-  const body = JSON.stringify({ id: ROW_ID, data: state, schema_version: state.schemaVersion || 1 });
-  fetch(SB_REST, {
-    method: 'POST',
-    headers: { ...SB_AUTH, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
-    body,
+  persistLocal();
+  if (!cloud.ready || !cloud.base || cloud.refused || !localHasUnsyncedChanges()) return;
+  const headers = { ...SB_AUTH, 'Content-Type': 'application/json' };
+  if (cloud.allowShrink) headers['x-allow-shrink'] = 'yes';
+  fetch(`${SB_REST}?id=eq.${ROW_ID}&updated_at=eq.${encodeURIComponent(cloud.base.updated_at)}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ data: state, schema_version: state.schemaVersion || 1 }),
     keepalive: true,
   }).catch(() => {});
 });

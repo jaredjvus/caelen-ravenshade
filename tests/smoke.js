@@ -32,7 +32,9 @@ function fakeSupabase(opts = {}) {
     transfers: opts.transfers ? opts.transfers.map(t => ({ ...t })) : [],
     keys: new Map(),     // sheet id -> passcode (plaintext is fine in a fake)
     history: [],
-    writes: 0
+    writes: 0,
+    offline: !!opts.offline,
+    nextHistoryId: 1
   };
   if (opts.sheet !== null) {
     db.sheets.set(ROW_ID, { id: ROW_ID, data: opts.sheet || FIXTURE, schema_version: 1, updated_at: opts.updatedAt || '2026-11-16T05:07:00.000Z' });
@@ -44,7 +46,7 @@ function fakeSupabase(opts = {}) {
   const parseFilters = (url) => {
     const f = [];
     for (const [k, v] of url.searchParams) {
-      if (k === 'select') continue;
+      if (['select', 'order', 'limit'].includes(k)) continue;
       const m = /^(eq|is)\.(.*)$/.exec(v);
       if (m) f.push([k, m[1], decodeURIComponent(m[2])]);
     }
@@ -54,6 +56,18 @@ function fakeSupabase(opts = {}) {
     op === 'is' ? (v === 'null' ? row[k] == null : false)
       : k === 'updated_at' ? Date.parse(row[k]) === Date.parse(v) : String(row[k]) === v);
   const canWrite = (id, headers) => !db.keys.has(id) || headers['x-sheet-key'] === db.keys.get(id);
+  // Mirrors the database's sheet_guard trigger (supabase/migrations).
+  const guard = (prev, next, headers) => {
+    if (!next || typeof next !== 'object' || Array.isArray(next) || !Object.keys(next).length) return 'sheet_guard: refusing to blank sheet';
+    if (headers['x-allow-shrink'] === 'yes' || !prev) return null;
+    const ol = JSON.stringify(prev).length, nl = JSON.stringify(next).length;
+    if (ol > 1024 && nl < ol * 0.4) return 'sheet_guard: refusing to shrink sheet';
+    for (const [k, v] of Object.entries(prev)) {
+      if (Array.isArray(v) && v.length >= 3 && (!Array.isArray(next[k]) || next[k].length === 0)) return `sheet_guard: refusing to empty "${k}"`;
+    }
+    return null;
+  };
+  const archive = (r) => db.history.push({ id: db.nextHistoryId++, sheet_id: r.id, data: JSON.parse(JSON.stringify(r.data)), schema_version: r.schema_version, saved_at: r.updated_at, archived_at: new Date(clock).toISOString() });
   const json = (route, status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
   async function handle(route) {
@@ -62,7 +76,7 @@ function fakeSupabase(opts = {}) {
     const method = req.method();
     const headers = req.headers();
     const body = req.postData() ? JSON.parse(req.postData()) : null;
-    if (opts.offline) return route.abort();
+    if (db.offline) return route.abort();
 
     if (url.pathname.endsWith('/rpc/set_sheet_key')) {
       const { sheet_id, old_key, new_key } = body;
@@ -82,7 +96,13 @@ function fakeSupabase(opts = {}) {
       if (method === 'POST') {
         if (!canWrite(body.id, headers)) return json(route, 401, { message: 'new row violates row-level security policy' });
         const prev = db.sheets.get(body.id);
-        if (prev) db.history.push({ ...prev });
+        const upsert = /merge-duplicates/.test(headers['prefer'] || '');
+        if (prev && !upsert) return json(route, 409, { message: 'duplicate key value violates unique constraint' });
+        if (prev) {
+          const bad = guard(prev.data, body.data, headers);
+          if (bad) return json(route, 400, { message: bad });
+          archive(prev);
+        }
         const row = { ...(prev || {}), ...body, updated_at: now() };
         db.sheets.set(body.id, row); db.writes++;
         return json(route, 201, [row]);
@@ -91,7 +111,9 @@ function fakeSupabase(opts = {}) {
         const out = [];
         for (const r of db.sheets.values()) {
           if (!matches(r, filters) || !canWrite(r.id, headers)) continue;
-          db.history.push({ ...r });
+          const bad = body.data !== undefined ? guard(r.data, body.data, headers) : null;
+          if (bad) return json(route, 400, { message: bad });
+          archive(r);
           Object.assign(r, body, { updated_at: now() });
           out.push(r); db.writes++;
         }
@@ -99,6 +121,12 @@ function fakeSupabase(opts = {}) {
       }
     }
 
+    if (url.pathname.endsWith('/character_sheet_history')) {
+      const filters = parseFilters(url);
+      const rows = db.history.filter(r => matches(r, filters)).sort((a, b) => b.id - a.id);
+      const limit = +url.searchParams.get('limit') || rows.length;
+      return json(route, 200, rows.slice(0, limit));
+    }
     if (url.pathname.endsWith('/item_transfers')) {
       const filters = parseFilters(url);
       if (method === 'GET') return json(route, 200, db.transfers.filter(r => matches(r, filters)));
@@ -115,7 +143,7 @@ function fakeSupabase(opts = {}) {
   // Simulate "another device" editing the cloud copy directly.
   db.remoteEdit = (fn) => {
     const r = db.sheets.get(ROW_ID);
-    db.history.push({ ...r });
+    archive(r);
     r.data = JSON.parse(JSON.stringify(r.data));
     fn(r.data);
     r.updated_at = now();
@@ -237,7 +265,7 @@ test('a failing section shows a banner instead of breaking the page', async (b) 
 
 // Extra test modules (one per feature) register themselves here.
 for (const f of fs.readdirSync(__dirname).filter(f => /^smoke\..+\.js$/.test(f)).sort()) {
-  require(path.join(__dirname, f))({ test, assert, openSheet, fakeSupabase, logCount, withTime, FIXTURE, ROW_ID, STORAGE_KEY });
+  require(path.join(__dirname, f))({ test, assert, openSheet, fakeSupabase, logCount, withTime, FIXTURE, ROW_ID, STORAGE_KEY, ORIGIN });
 }
 
 (async () => {
@@ -249,7 +277,7 @@ for (const f of fs.readdirSync(__dirname).filter(f => /^smoke\..+\.js$/.test(f))
     let s;
     try {
       s = await t.fn(browser);
-      if (s && s.page.collectRenderErrors) await s.page.collectRenderErrors();
+      if (s && s.page && s.page.collectRenderErrors) await s.page.collectRenderErrors();
       if (s && s.errors.length) throw new Error(s.errors.join('\n'));
       console.log('  ok   ' + t.name);
     } catch (e) {
