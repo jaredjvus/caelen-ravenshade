@@ -4,9 +4,7 @@
 
 const STORAGE_KEY = 'caelen-sheet-v1';
 const STORAGE_KEY_BAK = STORAGE_KEY + '-bak';
-// Field Log placeholder for entries with no body. Declared up here (not next
-// to renderLog) because the initial render() runs before the Field Log code
-// further down is evaluated; a later `const` would be in its TDZ and throw.
+// Field Log placeholder for entries with no body.
 const LOG_EMPTY_BODY = 'No details yet — click Edit to add some.';
 
 const DEFAULT_STATE = {
@@ -151,7 +149,6 @@ const IS_DM = new URLSearchParams(location.search).get('view') === 'dm';
 if (document.body) document.body.classList.toggle('dm-mode', IS_DM);
 
 let state = loadState();
-try { migrateLegacyMagicItemsToGear(); } catch (e) { console.error('migrateLegacyMagicItemsToGear failed:', e); }
 
 // One-time migration: port any entries from the legacy state.magicItems array
 // into state.gear, then empty state.magicItems so they don't double-count in
@@ -489,6 +486,33 @@ function hasFeat(featId, level) {
 // RENDER
 // ============================================================
 
+// Runs one section's renderer, so a bug in one card can't blank the rest of
+// the sheet (or abort the script). Failures are logged, collected on
+// window.__renderErrors (the smoke tests assert it stays empty) and surfaced
+// in a small banner instead of failing silently.
+function safeRender(name, fn) {
+  try { fn(); }
+  catch (e) { reportRenderError(name, e); }
+}
+function reportRenderError(name, e) {
+  console.error(`[render] ${name} failed:`, e);
+  window.__renderErrors = window.__renderErrors || [];
+  window.__renderErrors.push(`${name}: ${e && e.message}`);
+  let bar = document.getElementById('render-error-banner');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'render-error-banner';
+    bar.className = 'render-error-banner';
+    bar.setAttribute('role', 'alert');
+    bar.innerHTML = '<span class="reb-text"></span><button type="button" aria-label="Dismiss">×</button>';
+    bar.querySelector('button').addEventListener('click', () => bar.remove());
+    document.body.appendChild(bar);
+  }
+  const failed = [...new Set(window.__renderErrors.map(x => x.split(':')[0]))];
+  bar.querySelector('.reb-text').textContent =
+    `Part of the sheet failed to display (${failed.join(', ')}). Your data is safe — try reloading.`;
+}
+
 function render() {
   const level = state.level;
   const stats = computeStats(level);
@@ -539,7 +563,7 @@ function render() {
   if (acSub) acSub.textContent = acSubText; // leather + DEX (AC isn't a d20 test)
   document.getElementById('hp-max').textContent = hp;
   document.getElementById('init-val').textContent = fmtMod(mod(stats.dex) - exhaustPen);
-  renderSensesCard(stats);
+  safeRender('renderSensesCard', () => renderSensesCard(stats));
 
   // Speed (apply immobilizing conditions, plus Speedy feat if taken)
   const condEffects = getConditionEffects();
@@ -588,7 +612,7 @@ function render() {
   document.getElementById('curse-heal').textContent = w + chaMod;
 
   // Weapon Attacks (auto-built from equipped weapons in state.gear)
-  renderWeaponAttacks(level, stats, pb);
+  safeRender('renderWeaponAttacks', () => renderWeaponAttacks(level, stats, pb));
 
   // Weapon Mastery Reference (static glossary, filled once — cheap to re-run)
   const masteryRefBody = document.getElementById('mastery-reference-body');
@@ -652,7 +676,7 @@ function render() {
   document.getElementById('musician-dice').textContent = pb;
 
   // Spell slots
-  renderSlots(level);
+  safeRender('renderSlots', () => renderSlots(level));
 
   // Sorcery points
   const sp = document.getElementById('sorcery-display');
@@ -663,35 +687,35 @@ function render() {
   }
 
   // Spells
-  renderSpells(level);
+  safeRender('renderSpells', () => renderSpells(level));
 
   // Class features
-  renderClassFeatures(level);
+  safeRender('renderClassFeatures', () => renderClassFeatures(level));
 
   // Alternates
-  renderAlternates(level);
+  safeRender('renderAlternates', () => renderAlternates(level));
 
   // Combat loops
-  renderCombatLoops(level);
+  safeRender('renderCombatLoops', () => renderCombatLoops(level));
 
   // Level table
-  renderLevelTable(level);
+  safeRender('renderLevelTable', () => renderLevelTable(level));
 
   // Inventory
-  renderGear();
-  renderInventory();
-  renderCoins();
-  migrateLog();
-  renderLog();
+  safeRender('renderGear', () => renderGear());
+  safeRender('renderInventory', () => renderInventory());
+  safeRender('renderCoins', () => renderCoins());
+  safeRender('migrateLog', () => migrateLog());
+  safeRender('renderLog', () => renderLog());
 
   // Combat resources + concentration dropdown + death saves + conditions + Wild Magic Surge
-  renderCombatResources(level);
-  renderConcentrationOptions(level);
-  renderDeathSaves(hp);
-  renderConditions();
-  renderSurge(level);
+  safeRender('renderCombatResources', () => renderCombatResources(level));
+  safeRender('renderConcentrationOptions', () => renderConcentrationOptions(level));
+  safeRender('renderDeathSaves', () => renderDeathSaves(hp));
+  safeRender('renderConditions', () => renderConditions());
+  safeRender('renderSurge', () => renderSurge(level));
   // renderMagicItemsCard() call removed — the Gear card supersedes it.
-  updateVitalsBar();
+  safeRender('updateVitalsBar', () => updateVitalsBar());
 }
 
 // Mirrors HP/AC/Concentration/Curse into the sticky vitals bar. Reads
@@ -3200,15 +3224,13 @@ document.getElementById('gear-library-search').addEventListener('input', (e) => 
   if (_ssc) _ssc.addEventListener('click', () => { _ss.value = ''; render(); _ss.focus(); });
 }
 
-// Initial render
-render();
 
 // ============================================================
 // INITIAL CLOUD LOAD
 // ============================================================
 // localStorage is the fast cache. After the initial render from local,
 // reach out for remote state; if it's newer, replace and re-render.
-(async function initCloudSync() {
+async function initCloudSync() {
   const hasLocal = !!localStorage.getItem(STORAGE_KEY);
   setCloudStatus('loading', 'Cloud: loading…');
   try {
@@ -3253,7 +3275,7 @@ render();
       console.error('transfer inbox check failed', e);
     }
   }
-})();
+}
 
 // ============================================================
 // DM POLLING
@@ -3613,4 +3635,17 @@ function renderLog() {
       showInfo('Field Log (Markdown)', `<textarea style="width:100%;height:320px;font-family:monospace;font-size:0.8rem;">${logEsc(md)}</textarea>`);
     }
   });
+})();
+
+// ============================================================
+// BOOT — keep this the last thing in the file
+// ============================================================
+// Everything above only declares functions/constants or wires listeners.
+// The first render and the cloud load run here, after every top-level
+// `const`/`let` has been initialized, so nothing render() touches can be in
+// its temporal dead zone (the cause of two past "sheet goes blank" bugs).
+(function boot() {
+  try { migrateLegacyMagicItemsToGear(); } catch (e) { console.error('migrateLegacyMagicItemsToGear failed:', e); }
+  safeRender('render', render);
+  initCloudSync();
 })();

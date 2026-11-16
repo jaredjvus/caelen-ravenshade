@@ -154,6 +154,13 @@ async function openSheet(browser, opts = {}) {
     return el && /synced|offline|live|locked/i.test(el.textContent);
   }, null, { timeout: 10000 }).catch(() => errors.push('cloud status never settled'));
   await page.waitForTimeout(300);
+  // Section renderers catch their own errors (safeRender) so the sheet keeps
+  // working, which also hides them from 'pageerror'. Collect them on demand.
+  const origPush = errors.push.bind(errors);
+  page.collectRenderErrors = async () => {
+    const r = await page.evaluate(() => window.__renderErrors || []).catch(() => []);
+    r.forEach(x => origPush('render error: ' + x));
+  };
   return { ctx, page, errors, supa };
 }
 
@@ -213,6 +220,21 @@ test('add a Field Log entry and it saves to the cloud', async (b) => {
   return s;
 });
 
+test('a failing section shows a banner instead of breaking the page', async (b) => {
+  const s = await openSheet(b, {});
+  const r = await s.page.evaluate(() => {
+    let after = false;
+    safeRender('fakeSection', () => { throw new Error('boom'); });
+    after = true;
+    const bar = document.getElementById('render-error-banner');
+    const out = { after, text: bar && bar.textContent };
+    window.__renderErrors = []; bar && bar.remove();
+    return out;
+  });
+  assert(r.after && /fakeSection/.test(r.text || ''), 'expected banner naming the failed section');
+  return s;
+});
+
 // Extra test modules (one per feature) register themselves here.
 for (const f of fs.readdirSync(__dirname).filter(f => /^smoke\..+\.js$/.test(f)).sort()) {
   require(path.join(__dirname, f))({ test, assert, openSheet, fakeSupabase, logCount, withTime, FIXTURE, ROW_ID, STORAGE_KEY });
@@ -227,6 +249,7 @@ for (const f of fs.readdirSync(__dirname).filter(f => /^smoke\..+\.js$/.test(f))
     let s;
     try {
       s = await t.fn(browser);
+      if (s && s.page.collectRenderErrors) await s.page.collectRenderErrors();
       if (s && s.errors.length) throw new Error(s.errors.join('\n'));
       console.log('  ok   ' + t.name);
     } catch (e) {
